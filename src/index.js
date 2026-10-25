@@ -12,7 +12,11 @@ app.use(express.json());
 
 // Configuración de conexión a PostgreSQL
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/tanextli_db'
+  host: process.env.DB_HOST || 'db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'tanextli_db',
+  port: process.env.DB_PORT || 5432,
 });
 
 const multimediaPath = '/home/olo/tanextli-project/Multimedia/AudiosTanextli';
@@ -44,17 +48,17 @@ app.get('/api/media-list', (req, res) => {
   }
 });
 
-// Endpoint GET para listar usuarios en JSON
+// Endpoint GET para listar usuarios en JSON (Excluyendo superuser por seguridad o mostrando rol)
 app.get('/api/usuarios', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nombre_usuario, correo, creado_en FROM usuarios ORDER BY id ASC');
+    const result = await pool.query('SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios WHERE rol != \'superuser\' ORDER BY id ASC');
     res.json({ estado: 'OK', total: result.rowCount, usuarios: result.rows });
   } catch (err) {
     res.status(500).json({ estado: 'ERROR', error: err.message });
   }
 });
 
-// API DE REGISTRO (POST /api/registro)
+// API DE REGISTRO (POST /api/registro) - Asigna rol por defecto 'usuario'
 app.post('/api/registro', async (req, res) => {
   try {
     const { nombre_usuario, correo, password } = req.body;
@@ -75,9 +79,9 @@ app.post('/api/registro', async (req, res) => {
     }
 
     const queryInsert = `
-      INSERT INTO usuarios (nombre_usuario, correo, password_hash, creado_en) 
-      VALUES ($1, $2, $3, NOW()) 
-      RETURNING id, nombre_usuario, correo, creado_en
+      INSERT INTO usuarios (nombre_usuario, correo, password_hash, rol, creado_en) 
+      VALUES ($1, $2, $3, 'usuario', NOW()) 
+      RETURNING id, nombre_usuario, correo, rol, creado_en
     `;
     const values = [nombre_usuario, correo, password];
     const nuevoUsuario = await pool.query(queryInsert, values);
@@ -94,9 +98,7 @@ app.post('/api/registro', async (req, res) => {
   }
 });
 
-// ==========================================
-// NUEVO: API DE LOGIN (POST /api/login)
-// ==========================================
+// API DE LOGIN (POST /api/login) - Devuelve el rol
 app.post('/api/login', async (req, res) => {
   try {
     const { correo, password } = req.body;
@@ -108,9 +110,8 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Buscar el usuario por correo en la base de datos
     const resultado = await pool.query(
-      'SELECT id, nombre_usuario, correo, password_hash, creado_en FROM usuarios WHERE correo = $1',
+      'SELECT id, nombre_usuario, correo, password_hash, rol, creado_en FROM usuarios WHERE correo = $1',
       [correo]
     );
 
@@ -123,7 +124,6 @@ app.post('/api/login', async (req, res) => {
 
     const usuario = resultado.rows[0];
 
-    // Validar contraseña (comparando con el campo password_hash almacenado)
     if (usuario.password_hash !== password) {
       return res.status(401).json({ 
         estado: 'ERROR', 
@@ -131,7 +131,6 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Login exitoso
     return res.status(200).json({
       estado: 'EXITO',
       mensaje: 'Inicio de sesión exitoso.',
@@ -139,6 +138,7 @@ app.post('/api/login', async (req, res) => {
         id: usuario.id,
         nombre_usuario: usuario.nombre_usuario,
         correo: usuario.correo,
+        rol: usuario.rol,
         creado_en: usuario.creado_en
       }
     });
@@ -149,14 +149,14 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Interfaz visual en tabla para los usuarios
+// Interfaz visual en tabla para administración (Ocultando al superuser)
 app.get('/admin/usuarios', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nombre_usuario, correo, creado_en FROM usuarios ORDER BY id ASC');
+    const result = await pool.query("SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios WHERE rol != 'superuser' ORDER BY id ASC");
     let filasHTML = '';
     
     if (result.rows.length === 0) {
-      filasHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #7f8c8d;">No hay usuarios registrados en la base de datos.</td></tr>`;
+      filasHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">No hay usuarios registrados en la base de datos.</td></tr>`;
     } else {
       result.rows.forEach(u => {
         filasHTML += `
@@ -164,6 +164,7 @@ app.get('/admin/usuarios', async (req, res) => {
             <td style="padding: 12px 15px;">${u.id}</td>
             <td style="padding: 12px 15px; font-weight: 500; color: #2c3e50;">${u.nombre_usuario || 'N/A'}</td>
             <td style="padding: 12px 15px; color: #7f8c8d;">${u.correo || 'N/A'}</td>
+            <td style="padding: 12px 15px;"><span style="background: ${u.rol === 'admin' ? '#e67e22' : '#2980b9'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">${u.rol}</span></td>
             <td style="padding: 12px 15px; color: #95a5a6; font-size: 0.9rem;">${u.creado_en ? new Date(u.creado_en).toLocaleString() : 'N/A'}</td>
           </tr>
         `;
@@ -201,6 +202,7 @@ app.get('/admin/usuarios', async (req, res) => {
                 <th>ID</th>
                 <th>Nombre de Usuario</th>
                 <th>Correo Electrónico</th>
+                <th>Rol</th>
                 <th>Fecha de Creación</th>
               </tr>
             </thead>
@@ -217,7 +219,7 @@ app.get('/admin/usuarios', async (req, res) => {
   }
 });
 
-// Interfaz visual multimedia en /api/media
+// Interfaz visual multimedia en /api/media (Intacta)
 app.get('/api/media', (req, res) => {
   try {
     const estructura = scanDirectory(multimediaPath);
