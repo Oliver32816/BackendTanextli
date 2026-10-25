@@ -1,21 +1,21 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'tanextli_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'tanextli_clave_secreta_super_segura_2026';
 
 const verificarToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader && authHeader.split(' ')[1]; // Formato: Bearer <TOKEN>
 
   if (!token) {
-    return res.status(401).json({ error: 'Acceso denegado, token no proporcionado' });
+    return res.status(401).json({ estado: 'ERROR', mensaje: 'Acceso denegado: Token no proporcionado' });
   }
 
   try {
-    const verificado = jwt.verify(token, JWT_SECRET);
-    req.usuario = verificado;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.usuario = decoded;
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Token inválido o expirado' });
+    return res.status(401).json({ estado: 'ERROR', mensaje: 'Token inválido o expirado' });
   }
 };
 
-module.exports = { verificarToken, JWT_SECRET };
+module.exports = { verificarToken };

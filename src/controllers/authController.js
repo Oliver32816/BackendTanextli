@@ -1,104 +1,76 @@
-const db = require('../config/db');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../middleware/auth');
+const pool = require('../config/db');
 
-exports.registro = async (req, res) => {
-  const { nombre_usuario, correo, password } = req.body;
+// Clave secreta para firmar tokens
+const JWT_SECRET = process.env.JWT_SECRET || 'tanextli_clave_secreta_super_segura_2026';
 
-  if (!nombre_usuario || !correo || !password) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
+// 1. LOGIN
+const login = async (req, res) => {
+  const { correo, contraseña } = req.body;
 
   try {
-    const usuarioExiste = await db.query('SELECT id FROM usuarios WHERE correo = $1', [correo]);
-    if (usuarioExiste.rows.length > 0) {
-      return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const nuevoUsuario = await db.query(
-      'INSERT INTO usuarios (nombre_usuario, correo, password_hash) VALUES ($1, $2, $3) RETURNING id, nombre_usuario, correo',
-      [nombre_usuario, correo, passwordHash]
+    const result = await pool.query(
+      'SELECT id, nombre_usuario, correo, contraseña, rol FROM usuarios WHERE correo = $1',
+      [correo]
     );
 
-    const usuario = nuevoUsuario.rows[0];
-    const token = jwt.sign({ id: usuario.id, correo: usuario.correo }, JWT_SECRET, { expiresIn: '7d' });
-
-    return res.status(201).json({ token, usuario });
-  } catch (error) {
-    console.error('Error en registro:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-};
-
-exports.login = async (req, res) => {
-  const { correo, password } = req.body;
-
-  if (!correo || !password) {
-    return res.status(400).json({ error: 'Correo y contraseña requeridos' });
-  }
-
-  try {
-    const result = await db.query('SELECT * FROM usuarios WHERE correo = $1', [correo]);
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+      return res.status(401).json({ estado: 'ERROR', mensaje: 'Credenciales inválidas' });
     }
 
     const usuario = result.rows[0];
-    const passwordValido = await bcrypt.compare(password, usuario.password_hash);
 
-    if (!passwordValido) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    // Validación de contraseña
+    if (usuario.contraseña !== contraseña) {
+      return res.status(401).json({ estado: 'ERROR', mensaje: 'Credenciales inválidas' });
     }
 
-    const token = jwt.sign({ id: usuario.id, correo: usuario.correo }, JWT_SECRET, { expiresIn: '7d' });
+    // Generar Token JWT con caducidad de 1 hora
+    const token = jwt.sign(
+      { 
+        id: usuario.id, 
+        nombre_usuario: usuario.nombre_usuario, 
+        correo: usuario.correo,
+        rol: usuario.rol || 'usuario'
+      },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
-    return res.status(200).json({
+    res.json({
+      estado: 'OK',
+      mensaje: 'Inicio de sesión exitoso',
       token,
       usuario: {
         id: usuario.id,
         nombre_usuario: usuario.nombre_usuario,
         correo: usuario.correo,
-      },
+        rol: usuario.rol || 'usuario'
+      }
     });
   } catch (error) {
-    console.error('Error en login:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ estado: 'ERROR', mensaje: error.message });
   }
 };
 
-// Endpoint exclusivo para JSON (Postman / Flutter)
-exports.obtenerUsuarios = async (req, res) => {
-  const { correo, nombre } = req.query;
+// 2. RENOVACIÓN DE TOKEN
+const renovarToken = async (req, res) => {
+  const { id, nombre_usuario, correo, rol } = req.usuario;
 
-  try {
-    let sql = 'SELECT id, nombre_usuario, correo, creado_en FROM usuarios';
-    const params = [];
-    const condiciones = [];
+  const nuevoToken = jwt.sign(
+    { id, nombre_usuario, correo, rol },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
 
-    if (correo) {
-      params.push(`%${correo}%`);
-      condiciones.push(`correo ILIKE $${params.length}`);
-    }
+  res.json({
+    estado: 'OK',
+    mensaje: 'Token renovado exitosamente',
+    token: nuevoToken
+  });
+};
 
-    if (nombre) {
-      params.push(`%${nombre}%`);
-      condiciones.push(`nombre_usuario ILIKE $${params.length}`);
-    }
-
-    if (condiciones.length > 0) {
-      sql += ' WHERE ' + condiciones.join(' AND ');
-    }
-
-    sql += ' ORDER BY id ASC';
-
-    const result = await db.query(sql, params);
-    return res.status(200).json(result.rows);
-  } catch (error) {
-    console.error('Error al obtener usuarios:', error);
-    return res.status(500).json({ error: 'Error interno al consultar la base de datos' });
-  }
+module.exports = {
+  login,
+  renovarToken
 };
