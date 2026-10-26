@@ -150,75 +150,10 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// ENDPOINTS DE ADMINISTRACIÓN Y CONTROL ABSOLUTO
+// MONTAJE DE RUTAS DE ADMINISTRACIÓN (API JSON)
 // ==========================================
-
-// 1. Obtener todos los usuarios para administración (vía API JSON)
-app.get('/api/admin/usuarios', async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en FROM usuarios ORDER BY id ASC"
-    );
-    res.json({ estado: 'EXITO', total: result.rowCount, usuarios: result.rows });
-  } catch (err) {
-    console.error('Error al obtener usuarios admin:', err);
-    res.status(500).json({ estado: 'ERROR', error: err.message });
-  }
-});
-
-// 2. Actualizar datos o rol de un usuario por ID (Control absoluto)
-app.put('/api/admin/usuarios/:id', async (req, res) => {
-  const { id } = req.params;
-  const { nombre_usuario, correo, rol } = req.body;
-
-  try {
-    const query = `
-      UPDATE usuarios 
-      SET nombre_usuario = COALESCE($1, nombre_usuario),
-          correo = COALESCE($2, correo),
-          rol = COALESCE($3, rol)
-      WHERE id = $4
-      RETURNING id, nombre_usuario, correo, rol, creado_en
-    `;
-    const values = [nombre_usuario, correo, rol, id];
-    const resultado = await pool.query(query, values);
-
-    if (resultado.rows.length === 0) {
-      return res.status(404).json({ estado: 'ERROR', mensaje: 'Usuario no encontrado.' });
-    }
-
-    res.json({
-      estado: 'EXITO',
-      mensaje: 'Usuario actualizado correctamente',
-      usuario: resultado.rows[0]
-    });
-  } catch (err) {
-    console.error('Error al actualizar usuario:', err);
-    res.status(500).json({ estado: 'ERROR', error: err.message });
-  }
-});
-
-// 3. Eliminar un usuario de la base de datos por ID
-app.delete('/api/admin/usuarios/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const resultado = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id, nombre_usuario', [id]);
-
-    if (resultado.rows.length === 0) {
-      return res.status(404).json({ estado: 'ERROR', mensaje: 'Usuario no encontrado.' });
-    }
-
-    res.json({
-      estado: 'EXITO',
-      mensaje: 'Usuario eliminado correctamente de la base de datos',
-      idEliminado: id
-    });
-  } catch (err) {
-    console.error('Error al eliminar usuario:', err);
-    res.status(500).json({ estado: 'ERROR', error: err.message });
-  }
-});
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
 
 // ==========================================
 // INTERFACES VISUALES HTML (Admin y Multimedia)
