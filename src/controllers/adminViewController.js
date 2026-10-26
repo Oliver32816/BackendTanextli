@@ -1,5 +1,6 @@
 const db = require('../config/db');
 
+// 1. Vista HTML pública existente (Lectura general)
 exports.verTablaUsuarios = async (req, res) => {
   const { correo, nombre } = req.query;
 
@@ -88,5 +89,72 @@ exports.verTablaUsuarios = async (req, res) => {
   } catch (error) {
     console.error('Error al generar vista HTML:', error);
     return res.status(500).send('<h3>Error interno al generar la tabla HTML</h3>');
+  }
+};
+
+// 2. API JSON: Obtener todos los usuarios para el Frontend
+exports.obtenerUsuariosAdmin = async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en FROM usuarios ORDER BY id ASC"
+    );
+    return res.json({ estado: 'EXITO', total: result.rowCount, usuarios: result.rows });
+  } catch (err) {
+    console.error('Error al obtener usuarios admin:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
+  }
+};
+
+// 3. API JSON: Actualizar datos o rol de un usuario por ID
+exports.actualizarUsuarioAdmin = async (req, res) => {
+  const { id } = req.params;
+  const { nombre_usuario, correo, rol } = req.body;
+
+  try {
+    const query = `
+      UPDATE usuarios 
+      SET nombre_usuario = COALESCE($1, nombre_usuario),
+          correo = COALESCE($2, correo),
+          rol = COALESCE($3, rol)
+      WHERE id = $4
+      RETURNING id, nombre_usuario, correo, rol, creado_en
+    `;
+    const values = [nombre_usuario, correo, rol, id];
+    const resultado = await db.query(query, values);
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ estado: 'ERROR', mensaje: 'Usuario no encontrado.' });
+    }
+
+    return res.json({
+      estado: 'EXITO',
+      mensaje: 'Usuario actualizado correctamente',
+      usuario: resultado.rows[0]
+    });
+  } catch (err) {
+    console.error('Error al actualizar usuario:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
+  }
+};
+
+// 4. API JSON: Eliminar un usuario por ID
+exports.eliminarUsuarioAdmin = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const resultado = await db.query('DELETE FROM usuarios WHERE id = $1 RETURNING id, nombre_usuario', [id]);
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ estado: 'ERROR', mensaje: 'Usuario no encontrado.' });
+    }
+
+    return res.json({
+      estado: 'EXITO',
+      mensaje: 'Usuario eliminado correctamente de la base de datos',
+      idEliminado: id
+    });
+  } catch (err) {
+    console.error('Error al eliminar usuario:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
   }
 };
