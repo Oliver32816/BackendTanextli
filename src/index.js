@@ -48,7 +48,7 @@ app.get('/api/media-list', (req, res) => {
   }
 });
 
-// Endpoint GET para listar usuarios en JSON (Excluyendo superuser por seguridad o mostrando rol)
+// Endpoint GET para listar usuarios en JSON
 app.get('/api/usuarios', async (req, res) => {
   try {
     const result = await pool.query("SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios WHERE rol != 'superuser' ORDER BY id ASC");
@@ -58,24 +58,18 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-// API DE REGISTRO (POST /api/registro) - Asigna rol por defecto 'usuario'
+// API DE REGISTRO
 app.post('/api/registro', async (req, res) => {
   try {
     const { nombre_usuario, correo, password } = req.body;
 
     if (!nombre_usuario || !correo || !password) {
-      return res.status(400).json({ 
-        estado: 'ERROR', 
-        mensaje: 'Faltan campos obligatorios: nombre_usuario, correo y password.' 
-      });
+      return res.status(400).json({ estado: 'ERROR', mensaje: 'Faltan campos obligatorios.' });
     }
 
     const usuarioExistente = await pool.query('SELECT id FROM usuarios WHERE correo = $1', [correo]);
     if (usuarioExistente.rowCount > 0) {
-      return res.status(409).json({ 
-        estado: 'ERROR', 
-        mensaje: 'El correo electrónico ya se encuentra registrado.' 
-      });
+      return res.status(409).json({ estado: 'ERROR', mensaje: 'El correo electrónico ya se encuentra registrado.' });
     }
 
     const queryInsert = `
@@ -83,66 +77,34 @@ app.post('/api/registro', async (req, res) => {
       VALUES ($1, $2, $3, 'usuario', NOW()) 
       RETURNING id, nombre_usuario, correo, rol, creado_en
     `;
-    const values = [nombre_usuario, correo, password];
-    const nuevoUsuario = await pool.query(queryInsert, values);
+    const nuevoUsuario = await pool.query(queryInsert, [nombre_usuario, correo, password]);
 
-    return res.status(201).json({
-      estado: 'EXITO',
-      mensaje: 'Usuario registrado correctamente.',
-      usuario: nuevoUsuario.rows[0]
-    });
-
+    return res.status(201).json({ estado: 'EXITO', mensaje: 'Usuario registrado correctamente.', usuario: nuevoUsuario.rows[0] });
   } catch (err) {
     console.error('Error en registro:', err);
     return res.status(500).json({ estado: 'ERROR', error: err.message });
   }
 });
 
-// API DE LOGIN (POST /api/login) - Devuelve el rol
+// API DE LOGIN
 app.post('/api/login', async (req, res) => {
   try {
     const { correo, password } = req.body;
-
     if (!correo || !password) {
-      return res.status(400).json({ 
-        estado: 'ERROR', 
-        mensaje: 'Faltan campos obligatorios: correo y password.' 
-      });
+      return res.status(400).json({ estado: 'ERROR', mensaje: 'Faltan campos obligatorios.' });
     }
 
-    const resultado = await pool.query(
-      'SELECT id, nombre_usuario, correo, password_hash, rol, creado_en FROM usuarios WHERE correo = $1',
-      [correo]
-    );
-
-    if (resultado.rowCount === 0) {
-      return res.status(401).json({ 
-        estado: 'ERROR', 
-        mensaje: 'Correo electrónico o contraseña incorrectos.' 
-      });
+    const resultado = await pool.query('SELECT id, nombre_usuario, correo, password_hash, rol, creado_en FROM usuarios WHERE correo = $1', [correo]);
+    if (resultado.rowCount === 0 || resultado.rows[0].password_hash !== password) {
+      return res.status(401).json({ estado: 'ERROR', mensaje: 'Correo electrónico o contraseña incorrectos.' });
     }
 
     const usuario = resultado.rows[0];
-
-    if (usuario.password_hash !== password) {
-      return res.status(401).json({ 
-        estado: 'ERROR', 
-        mensaje: 'Correo electrónico o contraseña incorrectos.' 
-      });
-    }
-
     return res.status(200).json({
       estado: 'EXITO',
       mensaje: 'Inicio de sesión exitoso.',
-      usuario: {
-        id: usuario.id,
-        nombre_usuario: usuario.nombre_usuario,
-        correo: usuario.correo,
-        rol: usuario.rol,
-        creado_en: usuario.creado_en
-      }
+      usuario: { id: usuario.id, nombre_usuario: usuario.nombre_usuario, correo: usuario.correo, rol: usuario.rol, creado_en: usuario.creado_en }
     });
-
   } catch (err) {
     console.error('Error en login:', err);
     return res.status(500).json({ estado: 'ERROR', error: err.message });
@@ -150,16 +112,71 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// MONTAJE DE RUTAS DE ADMINISTRACIÓN (API JSON)
+// ENDPOINTS JSON DE ADMINISTRACIÓN Y CONTROL ABSOLUTO
 // ==========================================
-const adminRoutes = require('./routes/adminRoutes');
-app.use('/api/admin', adminRoutes);
+
+// 1. Obtener todos los usuarios (JSON)
+app.get('/api/admin/usuarios', async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en FROM usuarios ORDER BY id ASC"
+    );
+    return res.json({ estado: 'EXITO', total: result.rowCount, usuarios: result.rows });
+  } catch (err) {
+    console.error('Error al obtener usuarios admin:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
+  }
+});
+
+// 2. Actualizar datos o rol de un usuario por ID
+app.put('/api/admin/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre_usuario, correo, rol } = req.body;
+
+  try {
+    const query = `
+      UPDATE usuarios 
+      SET nombre_usuario = COALESCE($1, nombre_usuario),
+          correo = COALESCE($2, correo),
+          rol = COALESCE($3, rol)
+      WHERE id = $4
+      RETURNING id, nombre_usuario, correo, rol, creado_en
+    `;
+    const resultado = await pool.query(query, [nombre_usuario, correo, rol, id]);
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ estado: 'ERROR', mensaje: 'Usuario no encontrado.' });
+    }
+
+    return res.json({ estado: 'EXITO', mensaje: 'Usuario actualizado correctamente', usuario: resultado.rows[0] });
+  } catch (err) {
+    console.error('Error al actualizar usuario:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
+  }
+});
+
+// 3. Eliminar un usuario por ID
+app.delete('/api/admin/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const resultado = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id, nombre_usuario', [id]);
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ estado: 'ERROR', mensaje: 'Usuario no encontrado.' });
+    }
+
+    return res.json({ estado: 'EXITO', mensaje: 'Usuario eliminado correctamente de la base de datos', idEliminado: id });
+  } catch (err) {
+    console.error('Error al eliminar usuario:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
+  }
+});
 
 // ==========================================
 // INTERFACES VISUALES HTML (Admin y Multimedia)
 // ==========================================
 
-// Interfaz visual en tabla para administración (Ocultando al superuser)
 app.get('/admin/usuarios', async (req, res) => {
   try {
     const result = await pool.query("SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios WHERE rol != 'superuser' ORDER BY id ASC");
@@ -229,7 +246,6 @@ app.get('/admin/usuarios', async (req, res) => {
   }
 });
 
-// Interfaz visual multimedia en /api/media
 app.get('/api/media', (req, res) => {
   try {
     const estructura = scanDirectory(multimediaPath);
