@@ -58,7 +58,7 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-// API DE REGISTRO
+// API DE REGISTRO ESTÁNDAR
 app.post('/api/registro', async (req, res) => {
   try {
     const { nombre_usuario, correo, password } = req.body;
@@ -112,8 +112,42 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// ENDPOINTS JSON DE ADMINISTRACIÓN Y CONTROL ABSOLUTO
+// API Y GESTIÓN DE ADMINISTRADORES Y ROLES
 // ==========================================
+
+// Endpoint POST para registrar administradores o superusuarios de forma segura
+app.post('/api/admin/registrar-usuario', async (req, res) => {
+  try {
+    const { nombre_usuario, correo, password, rol } = req.body;
+
+    if (!nombre_usuario || !correo || !password) {
+      return res.status(400).json({ estado: 'ERROR', mensaje: 'Faltan campos obligatorios.' });
+    }
+
+    const rolAsignado = ['usuario', 'admin', 'superuser'].includes(rol) ? rol : 'usuario';
+
+    const usuarioExistente = await pool.query('SELECT id FROM usuarios WHERE correo = $1', [correo]);
+    if (usuarioExistente.rowCount > 0) {
+      return res.status(409).json({ estado: 'ERROR', mensaje: 'El correo electrónico ya se encuentra registrado.' });
+    }
+
+    const queryInsert = `
+      INSERT INTO usuarios (nombre_usuario, correo, password_hash, rol, creado_en) 
+      VALUES ($1, $2, $3, $4, NOW()) 
+      RETURNING id, nombre_usuario, correo, rol, creado_en
+    `;
+    const nuevoUsuario = await pool.query(queryInsert, [nombre_usuario, correo, password, rolAsignado]);
+
+    return res.status(201).json({ 
+      estado: 'EXITO', 
+      mensaje: `Usuario con rol '${rolAsignado}' registrado correctamente.`, 
+      usuario: nuevoUsuario.rows[0] 
+    });
+  } catch (err) {
+    console.error('Error en registro administrativo:', err);
+    return res.status(500).json({ estado: 'ERROR', error: err.message });
+  }
+});
 
 // 1. Obtener todos los usuarios (JSON)
 app.get('/api/admin/usuarios', async (req, res) => {
@@ -177,9 +211,92 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
 // INTERFACES VISUALES HTML (Admin y Multimedia)
 // ==========================================
 
+// Interfaz visual privada para registrar administradores / superusuarios
+app.get('/admin/registro', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>Tanextli - Registro Administrativo</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; background: #f4f7f6; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #1a5276; margin-top: 0; font-size: 1.5rem; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+        .btn { display: block; width: 100%; background: #27ae60; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn:hover { opacity: 0.9; }
+        .links { margin-top: 20px; text-align: center; }
+        .links a { color: #2980b9; text-decoration: none; font-weight: 500; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🛠️ Tanextli - Registro Privado de Admin</h1>
+        <form id="adminForm">
+          <div class="form-group">
+            <label for="nombre_usuario">Nombre de Usuario:</label>
+            <input type="text" id="nombre_usuario" name="nombre_usuario" required>
+          </div>
+          <div class="form-group">
+            <label for="correo">Correo Electrónico:</label>
+            <input type="email" id="correo" name="correo" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="rol">Rol de Usuario:</label>
+            <select id="rol" name="rol">
+              <option value="usuario">Usuario Estándar</option>
+              <option value="admin">Administrador (admin)</option>
+              <option value="superuser">Superusuario (superuser)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn">Registrar Usuario con Rol</button>
+        </form>
+        <div id="resultado" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+        <div class="links">
+          <a href="/admin/usuarios">← Ver Tabla de Usuarios</a>
+        </div>
+      </div>
+      <script>
+        document.getElementById('adminForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const data = {
+            nombre_usuario: document.getElementById('nombre_usuario').value,
+            correo: document.getElementById('correo').value,
+            password: document.getElementById('password').value,
+            rol: document.getElementById('rol').value
+          };
+          const res = await fetch('/api/admin/registrar-usuario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const result = await res.json();
+          const resDiv = document.getElementById('resultado');
+          if (res.ok) {
+            resDiv.style.color = '#27ae60';
+            resDiv.innerText = '¡Exito! ' + result.mensaje;
+            document.getElementById('adminForm').reset();
+          } else {
+            resDiv.style.color = '#c0392b';
+            resDiv.innerText = 'Error: ' + (result.error || result.mensaje);
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 app.get('/admin/usuarios', async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios WHERE rol != 'superuser' ORDER BY id ASC");
+    const result = await pool.query("SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios ORDER BY id ASC");
     let filasHTML = '';
     
     if (result.rows.length === 0) {
@@ -191,7 +308,7 @@ app.get('/admin/usuarios', async (req, res) => {
             <td style="padding: 12px 15px;">${u.id}</td>
             <td style="padding: 12px 15px; font-weight: 500; color: #2c3e50;">${u.nombre_usuario || 'N/A'}</td>
             <td style="padding: 12px 15px; color: #7f8c8d;">${u.correo || 'N/A'}</td>
-            <td style="padding: 12px 15px;"><span style="background: ${u.rol === 'admin' ? '#e67e22' : '#2980b9'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">${u.rol}</span></td>
+            <td style="padding: 12px 15px;"><span style="background: ${u.rol === 'superuser' ? '#8e44ad' : u.rol === 'admin' ? '#e67e22' : '#2980b9'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">${u.rol}</span></td>
             <td style="padding: 12px 15px; color: #95a5a6; font-size: 0.9rem;">${u.creado_en ? new Date(u.creado_en).toLocaleString() : 'N/A'}</td>
           </tr>
         `;
@@ -210,6 +327,7 @@ app.get('/admin/usuarios', async (req, res) => {
           h1 { color: #1a5276; margin-top: 0; font-size: 1.8rem; display: flex; align-items: center; gap: 10px; }
           .btn { display: inline-block; background: #2980b9; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-bottom: 25px; margin-right: 10px; }
           .btn-success { background: #27ae60; }
+          .btn-warning { background: #d35400; }
           .btn:hover { opacity: 0.9; }
           table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
           th { background: #1a5276; color: white; text-align: left; padding: 12px 15px; font-size: 0.95rem; }
@@ -220,6 +338,7 @@ app.get('/admin/usuarios', async (req, res) => {
         <div class="container">
           <h1>👥 Tanextli - Usuarios Registrados</h1>
           <div>
+            <a href="/admin/registro" class="btn btn-warning">+ Registrar Nuevo Admin / Superuser</a>
             <a href="/api/usuarios" class="btn" target="_blank">Ver JSON de Usuarios</a>
             <a href="/api/media" class="btn btn-success">Ir a Multimedia</a>
           </div>
