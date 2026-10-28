@@ -12,7 +12,7 @@ app.use(express.json());
 
 // Configuración de conexión a PostgreSQL
 const pool = new Pool({
-  host: process.env.DB_HOST || 'db',
+  host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'tanextli_db',
@@ -73,8 +73,8 @@ app.post('/api/registro', async (req, res) => {
     }
 
     const queryInsert = `
-      INSERT INTO usuarios (nombre_usuario, correo, password_hash, rol, creado_en) 
-      VALUES ($1, $2, $3, 'usuario', NOW()) 
+      INSERT INTO usuarios (nombre_usuario, correo, password_hash, rol, creado_en)
+      VALUES ($1, $2, $3, 'usuario', NOW())
       RETURNING id, nombre_usuario, correo, rol, creado_en
     `;
     const nuevoUsuario = await pool.query(queryInsert, [nombre_usuario, correo, password]);
@@ -132,16 +132,16 @@ app.post('/api/admin/registrar-usuario', async (req, res) => {
     }
 
     const queryInsert = `
-      INSERT INTO usuarios (nombre_usuario, correo, password_hash, rol, creado_en) 
-      VALUES ($1, $2, $3, $4, NOW()) 
+      INSERT INTO usuarios (nombre_usuario, correo, password_hash, rol, creado_en)
+      VALUES ($1, $2, $3, $4, NOW())
       RETURNING id, nombre_usuario, correo, rol, creado_en
     `;
     const nuevoUsuario = await pool.query(queryInsert, [nombre_usuario, correo, password, rolAsignado]);
 
-    return res.status(201).json({ 
-      estado: 'EXITO', 
-      mensaje: `Usuario con rol '${rolAsignado}' registrado correctamente.`, 
-      usuario: nuevoUsuario.rows[0] 
+    return res.status(201).json({
+      estado: 'EXITO',
+      mensaje: `Usuario con rol '${rolAsignado}' registrado correctamente.`,
+      usuario: nuevoUsuario.rows[0]
     });
   } catch (err) {
     console.error('Error en registro administrativo:', err);
@@ -169,7 +169,7 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
 
   try {
     const query = `
-      UPDATE usuarios 
+      UPDATE usuarios
       SET nombre_usuario = COALESCE($1, nombre_usuario),
           correo = COALESCE($2, correo),
           rol = COALESCE($3, rol)
@@ -211,8 +211,44 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
 // INTERFACES VISUALES HTML (Admin y Multimedia)
 // ==========================================
 
-// Interfaz visual privada para registrar administradores / superusuarios
+// Interfaz visual privada protegida por contraseña maestra para registrar administradores
 app.get('/admin/registro', (req, res) => {
+  const passwordMaestra = req.query.pwd;
+  const PASSWORD_ADMIN = 'TanextliAdmin2026$'; // Contraseña maestra para acceder al registro
+
+  if (passwordMaestra !== PASSWORD_ADMIN) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>Tanextli - Acceso Restringido</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; background: #f4f7f6; color: #333; display: flex; justify-content: center; align-items: center; height: 80vh; }
+          .container { max-width: 400px; width: 100%; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+          h1 { color: #c0392b; font-size: 1.3rem; margin-bottom: 20px; }
+          input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; box-sizing: border-box; margin-bottom: 15px; }
+          .btn { width: 100%; background: #1a5276; color: white; padding: 10px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+          .btn:hover { opacity: 0.9; }
+          .error { color: #c0392b; font-weight: bold; margin-bottom: 15px; font-size: 0.95rem; }
+          .back { margin-top: 20px; display: block; color: #2980b9; text-decoration: none; font-size: 0.9rem; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>🔒 Acceso Restringido - Admin</h1>
+          ${passwordMaestra !== undefined ? '<div class="error">Contraseña incorrecta, acceso denegado</div>' : ''}
+          <form method="GET" action="/admin/registro">
+            <input type="password" name="pwd" placeholder="Introduce la contraseña maestra" required>
+            <button type="submit" class="btn">Acceder al Registro</button>
+          </form>
+          <a href="/admin/usuarios" class="back">← Volver a la tabla de usuarios</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
   res.send(`
     <!DOCTYPE html>
     <html lang="es">
@@ -281,7 +317,7 @@ app.get('/admin/registro', (req, res) => {
           const resDiv = document.getElementById('resultado');
           if (res.ok) {
             resDiv.style.color = '#27ae60';
-            resDiv.innerText = '¡Exito! ' + result.mensaje;
+            resDiv.innerText = '¡Éxito! ' + result.mensaje;
             document.getElementById('adminForm').reset();
           } else {
             resDiv.style.color = '#c0392b';
@@ -298,18 +334,23 @@ app.get('/admin/usuarios', async (req, res) => {
   try {
     const result = await pool.query("SELECT id, nombre_usuario, correo, rol, creado_en FROM usuarios ORDER BY id ASC");
     let filasHTML = '';
-    
+
     if (result.rows.length === 0) {
       filasHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">No hay usuarios registrados en la base de datos.</td></tr>`;
     } else {
       result.rows.forEach(u => {
+        // Formateo de fecha ajustado a la zona horaria de México (America/Mexico_City)
+        const fechaLocal = u.creado_en 
+          ? new Date(u.creado_en).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) 
+          : 'N/A';
+
         filasHTML += `
           <tr style="border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 12px 15px;">${u.id}</td>
             <td style="padding: 12px 15px; font-weight: 500; color: #2c3e50;">${u.nombre_usuario || 'N/A'}</td>
             <td style="padding: 12px 15px; color: #7f8c8d;">${u.correo || 'N/A'}</td>
             <td style="padding: 12px 15px;"><span style="background: ${u.rol === 'superuser' ? '#8e44ad' : u.rol === 'admin' ? '#e67e22' : '#2980b9'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">${u.rol}</span></td>
-            <td style="padding: 12px 15px; color: #95a5a6; font-size: 0.9rem;">${u.creado_en ? new Date(u.creado_en).toLocaleString() : 'N/A'}</td>
+            <td style="padding: 12px 15px; color: #95a5a6; font-size: 0.9rem;">${fechaLocal}</td>
           </tr>
         `;
       });
