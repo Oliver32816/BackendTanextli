@@ -112,6 +112,85 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
+// API DE PROGRESO DE USUARIOS / APRENDIZAJE
+// ==========================================
+
+// 1. Obtener el progreso general y por palabra de un usuario específico
+app.get('/api/progreso/:usuario_id', async (req, res) => {
+  const { usuario_id } = req.params;
+
+  try {
+    const consulta = `
+      SELECT 
+        p.id,
+        p.usuario_id,
+        p.categoria_id,
+        c.nombre AS categoria_nombre,
+        p.palabra_id,
+        pal.espanol AS palabra_espanol,
+        pal.nahuatl AS palabra_nahuatl,
+        pal.audio_url,
+        p.completado,
+        p.veces_practicada,
+        p.ultima_practica
+      FROM progreso_usuarios p
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+      LEFT JOIN palabras pal ON p.palabra_id = pal.id
+      WHERE p.usuario_id = $1
+      ORDER BY p.ultima_practica DESC;
+    `;
+
+    const { rows } = await pool.query(consulta, [usuario_id]);
+
+    return res.status(200).json({
+      estado: 'EXITO',
+      total_registros: rows.length,
+      progreso: rows
+    });
+  } catch (error) {
+    console.error("Error al obtener progreso:", error);
+    return res.status(500).json({ estado: 'ERROR', error: error.message });
+  }
+});
+
+// 2. Registrar o actualizar el progreso de una palabra practicada (Upsert)
+app.post('/api/progreso', async (req, res) => {
+  const { usuario_id, palabra_id, categoria_id, completado } = req.body;
+
+  if (!usuario_id || !palabra_id || !categoria_id) {
+    return res.status(400).json({
+      estado: 'ERROR',
+      mensaje: "Los campos usuario_id, palabra_id y categoria_id son obligatorios"
+    });
+  }
+
+  try {
+    const consultaUpsert = `
+      INSERT INTO progreso_usuarios (usuario_id, palabra_id, categoria_id, completado, veces_practicada, ultima_practica)
+      VALUES ($1, $2, $3, COALESCE($4, true), 1, NOW())
+      ON CONFLICT (usuario_id, palabra_id) 
+      DO UPDATE SET 
+        completado = EXCLUDED.completado,
+        veces_practicada = progreso_usuarios.veces_practicada + 1,
+        ultima_practica = NOW()
+      RETURNING *;
+    `;
+
+    const values = [usuario_id, palabra_id, categoria_id, completado];
+    const { rows } = await pool.query(consultaUpsert, values);
+
+    return res.status(200).json({
+      estado: 'EXITO',
+      mensaje: "Progreso registrado correctamente",
+      data: rows[0]
+    });
+  } catch (error) {
+    console.error("Error al guardar progreso:", error);
+    return res.status(500).json({ estado: 'ERROR', error: error.message });
+  }
+});
+
+// ==========================================
 // API Y GESTIÓN DE ADMINISTRADORES Y ROLES
 // ==========================================
 
@@ -211,10 +290,9 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
 // INTERFACES VISUALES HTML (Admin y Multimedia)
 // ==========================================
 
-// Interfaz visual privada protegida por contraseña maestra para registrar administradores
 app.get('/admin/registro', (req, res) => {
   const passwordMaestra = req.query.pwd;
-  const PASSWORD_ADMIN = 'TanextliAdmin2026$'; // Contraseña maestra para acceder al registro
+  const PASSWORD_ADMIN = 'TanextliAdmin2026$';
 
   if (passwordMaestra !== PASSWORD_ADMIN) {
     return res.send(`
@@ -339,7 +417,6 @@ app.get('/admin/usuarios', async (req, res) => {
       filasHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">No hay usuarios registrados en la base de datos.</td></tr>`;
     } else {
       result.rows.forEach(u => {
-        // Formateo de fecha ajustado a la zona horaria de México (America/Mexico_City)
         const fechaLocal = u.creado_en 
           ? new Date(u.creado_en).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) 
           : 'N/A';
