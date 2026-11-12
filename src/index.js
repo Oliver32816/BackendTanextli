@@ -112,10 +112,62 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
+// API DE CATÁLOGO (CATEGORÍAS Y PALABRAS)
+// ==========================================
+
+app.get('/api/categorias', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, nombre, categoria_padre_id, imagen_url FROM categorias ORDER BY id ASC');
+    return res.status(200).json({
+      estado: 'EXITO',
+      total: result.rowCount,
+      categorias: result.rows
+    });
+  } catch (error) {
+    console.error('Error al obtener categorías:', error);
+    return res.status(500).json({ estado: 'ERROR', error: error.message });
+  }
+});
+
+app.get('/api/palabras', async (req, res) => {
+  const { categoria_id } = req.query;
+  try {
+    let query = `
+      SELECT 
+        p.id AS palabra_id,
+        p.espanol,
+        p.nahuatl,
+        p.categoria_id,
+        c.nombre AS subcategoria_nombre,
+        p.audio_url,
+        p.imagen_url
+      FROM palabras p
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+    `;
+    const params = [];
+    if (categoria_id) {
+      query += ' WHERE p.categoria_id = $1';
+      params.push(categoria_id);
+    }
+    query += ' ORDER BY p.id ASC';
+
+    const result = await pool.query(query, params);
+    return res.status(200).json({
+      estado: 'EXITO',
+      total: result.rowCount,
+      palabras: result.rows
+    });
+  } catch (error) {
+    console.error('Error al obtener palabras:', error);
+    return res.status(500).json({ estado: 'ERROR', error: error.message });
+  }
+});
+
+// ==========================================
 // API DE PROGRESO DE USUARIOS / APRENDIZAJE
 // ==========================================
 
-// 1. Obtener el progreso general y por palabra de un usuario específico
+// 1. Obtener el progreso general y por palabra (Mapeado exacto para Flutter)
 app.get('/api/progreso/:usuario_id', async (req, res) => {
   const { usuario_id } = req.params;
 
@@ -124,11 +176,11 @@ app.get('/api/progreso/:usuario_id', async (req, res) => {
       SELECT 
         p.id,
         p.usuario_id,
-        p.categoria_id,
-        c.nombre AS categoria_nombre,
-        p.palabra_id,
-        pal.espanol AS palabra_espanol,
+        p.categoria_id AS categoria_id,
+        c.nombre AS categoria,
+        p.palabra_id AS palabra_id,
         pal.nahuatl AS palabra_nahuatl,
+        pal.espanol AS palabra_espanol,
         pal.audio_url,
         p.completado,
         p.veces_practicada,
@@ -194,7 +246,6 @@ app.post('/api/progreso', async (req, res) => {
 // API Y GESTIÓN DE ADMINISTRADORES Y ROLES
 // ==========================================
 
-// Endpoint POST para registrar administradores o superusuarios de forma segura
 app.post('/api/admin/registrar-usuario', async (req, res) => {
   try {
     const { nombre_usuario, correo, password, rol } = req.body;
@@ -228,7 +279,6 @@ app.post('/api/admin/registrar-usuario', async (req, res) => {
   }
 });
 
-// 1. Obtener todos los usuarios (JSON)
 app.get('/api/admin/usuarios', async (req, res) => {
   try {
     const result = await pool.query(
@@ -241,7 +291,6 @@ app.get('/api/admin/usuarios', async (req, res) => {
   }
 });
 
-// 2. Actualizar datos o rol de un usuario por ID
 app.put('/api/admin/usuarios/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre_usuario, correo, rol } = req.body;
@@ -268,7 +317,6 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
   }
 });
 
-// 3. Eliminar un usuario por ID
 app.delete('/api/admin/usuarios/:id', async (req, res) => {
   const { id } = req.params;
 
