@@ -3,6 +3,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const config = require('../config/env');
 const { responderSinAcceso } = require('../utils/sinAcceso');
+const { esEquipoEnPanel, esEquipoEnPuertoPublico, identidad } = require('../utils/tailnet');
 
 // Política de contenido: las páginas solo cargan scripts, estilos, imágenes y audios propios.
 // No hay scripts ni estilos en línea: todo vive en /portal/assets.
@@ -64,19 +65,23 @@ const corsPublico = cors({
 // Capa 2 del panel: `tailscale serve` agrega la identidad de quien entra desde la tailnet
 // (Tailscale-User-Login). Si no viene, o no está en la lista permitida, se muestra
 // "No tienes acceso a esta función" (403) y no se entrega ningún dato.
+// APIs del puerto público reservadas al equipo (p. ej. GET /api/usuarios): solo responden
+// a dispositivos de la tailnet; desde internet devuelven 403.
+function soloEquipo(req, res, next) {
+  if (esEquipoEnPuertoPublico(req)) return next();
+  const { login, ip } = identidad(req);
+  console.warn(`[api] Solo equipo, rechazado: ${req.method} ${req.originalUrl} (usuario tailnet: "${login || 'ninguno'}", ip: ${ip})`);
+  return responderSinAcceso(req, res);
+}
+
 function soloTailnetAutorizada(req, res, next) {
-  if (!config.adminRequireTailscaleIdentity) return next();
-
-  const login = (req.get('Tailscale-User-Login') || '').toLowerCase();
-  const permitido = login !== ''
-    && (config.adminTailnetUsers.length === 0 || config.adminTailnetUsers.includes(login));
-
-  if (!permitido) {
-    console.warn(`[admin] Acceso rechazado: ${req.method} ${req.originalUrl} (usuario tailnet: "${login || 'ninguno'}")`);
+  if (!esEquipoEnPanel(req)) {
+    const { login, ip } = identidad(req);
+    console.warn(`[admin] Acceso rechazado: ${req.method} ${req.originalUrl} (usuario tailnet: "${login || 'ninguno'}", ip: ${ip})`);
     return responderSinAcceso(req, res);
   }
-
-  req.tailnetUser = { login, nombre: req.get('Tailscale-User-Name') || login };
+  const { login, nombre, ip } = identidad(req);
+  req.tailnetUser = { login: login || ip, nombre: nombre || ip };
   return next();
 }
 
@@ -101,5 +106,6 @@ module.exports = {
   adminSecurityHeaders,
   corsPublico,
   soloTailnetAutorizada,
+  soloEquipo,
   protegerApiAdmin,
 };

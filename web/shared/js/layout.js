@@ -12,6 +12,8 @@ const NAVEGACION = {
     { id: 'audios', texto: 'Audios', href: '/portal/audios/', icono: 'audio' },
     { id: 'imagenes', texto: 'Imágenes', href: '/portal/imagenes/', icono: 'imagen' },
     { id: 'privacidad', texto: 'Privacidad', href: '/portal/privacidad/', icono: 'escudo' },
+    // Solo dispositivos de la tailnet entran; desde internet se ve "No tienes acceso"
+    { id: 'usuarios', texto: 'Usuarios', href: '/admin/usuarios/', icono: 'candado' },
   ],
   admin: [
     { id: 'usuarios', texto: 'Usuarios', href: '/admin/usuarios/', icono: 'usuarios' },

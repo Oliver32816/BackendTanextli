@@ -455,7 +455,11 @@ table.tabla { width: 100%; border-collapse: collapse; min-width: 680px; }
 .endpoint + .endpoint { margin-top: .5rem; }
 .metodo { font-family: var(--fuente-mono); font-size: .72rem; font-weight: 800; padding: .2rem .5rem; border-radius: 6px; background: var(--verde-100); color: var(--primario); }
 .metodo.post { background: var(--naranja-100); color: var(--naranja-500); }
-.endpoint code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.endpoint-texto { flex: 1; min-width: 0; display: grid; gap: .15rem; }
+.endpoint code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.endpoint small { color: var(--texto-suave); font-size: .78rem; line-height: 1.35; }
+.grupo-endpoints { margin: 1.1rem 0 .5rem; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-tenue); }
+.grupo-endpoints:first-child { margin-top: .4rem; }
 
 /* Medidor de contraseña */
 .medidor { height: 6px; border-radius: 999px; background: var(--verde-100); overflow: hidden; margin-top: .5rem; }
@@ -519,7 +523,11 @@ table.tabla { width: 100%; border-collapse: collapse; min-width: 680px; }
 .lobita-interactiva { cursor: pointer; }
 .hero-con-lobita { display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: end; }
 .lobita-lateral { filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .18)); }
-@media (max-width: 720px) { .hero-con-lobita { grid-template-columns: 1fr; } .lobita-lateral { display: none; } }
+/* Celular: Lobita sigue a un lado del título, más pequeña (data-tamano-movil) */
+@media (max-width: 720px) {
+  .hero-con-lobita { gap: .75rem; align-items: center; }
+  .lobita-lateral .mxa-flota { display: none; } /* sin espacio para el globo junto al título */
+}
 
 /* Microinteracciones al pasar el mouse */
 .boton { position: relative; overflow: hidden; isolation: isolate; }

@@ -26,27 +26,50 @@ async function cargarEstadisticas() {
   }));
 }
 
+// Todas las rutas funcionan también con el prefijo /api/v1
 const ENDPOINTS = [
-  ['GET', '/api/v1/categorias'],
-  ['GET', '/api/v1/palabras?categoria_id=10'],
-  ['GET', '/api/v1/media-list'],
-  ['GET', '/api/v1/imagenes?categoria=animales'],
-  ['POST', '/api/v1/login'],
-  ['POST', '/api/v1/progreso'],
+  ['Cuenta', [
+    ['POST', '/api/registro', 'Crea una cuenta (nombre_usuario, correo, password)'],
+    ['POST', '/api/login', 'Inicia sesión (correo, password); devuelve el usuario y un token'],
+    ['GET', '/api/perfil', 'Usuario de la sesión (Authorization: Bearer <token>)'],
+  ]],
+  ['Progreso', [
+    ['GET', '/api/progreso/1', 'Progreso de un usuario por su id'],
+    ['POST', '/api/progreso', 'Guarda una palabra practicada (usuario_id, palabra_id, categoria_id, completado)'],
+  ]],
+  ['Contenido', [
+    ['GET', '/api/categorias', 'Categorías y subcategorías'],
+    ['GET', '/api/palabras?categoria_id=9', 'Palabras en español y náhuatl de una categoría'],
+    ['GET', '/api/mascota/frases', 'Frases de Lobita'],
+  ]],
+  ['Multimedia', [
+    ['GET', '/api/media-list', 'Carpetas y archivos de audio'],
+    ['GET', '/api/imagenes?categoria=animales', 'Imágenes con su URL'],
+  ]],
+  ['Solo equipo (red Tailscale)', [
+    ['GET', '/api/usuarios', 'Usuarios registrados'],
+    ['GET', '/api/progreso', 'Progreso de todos los usuarios'],
+  ]],
 ];
 
 function pintarEndpoints() {
   const contenedor = document.getElementById('endpoints');
-  ENDPOINTS.forEach(([metodo, ruta]) => {
-    const url = `${location.origin}${ruta}`;
-    contenedor.append(el('div', { class: 'endpoint' }, [
-      el('span', { class: `metodo ${metodo === 'POST' ? 'post' : ''}`, text: metodo }),
-      el('code', { text: ruta, title: url }),
-      el('button', {
-        class: 'mini-boton', type: 'button', 'aria-label': `Copiar ${ruta}`,
-        onclick: () => copiar(url, 'URL copiada'),
-      }, [icono('copiar')]),
-    ]));
+  ENDPOINTS.forEach(([grupo, rutas]) => {
+    contenedor.append(el('h4', { class: 'grupo-endpoints', text: grupo }));
+    rutas.forEach(([metodo, ruta, descripcion]) => {
+      const url = `${location.origin}${ruta}`;
+      contenedor.append(el('div', { class: 'endpoint', title: descripcion }, [
+        el('span', { class: `metodo ${metodo === 'POST' ? 'post' : ''}`, text: metodo }),
+        el('div', { class: 'endpoint-texto' }, [
+          el('code', { text: ruta, title: url }),
+          el('small', { text: descripcion }),
+        ]),
+        el('button', {
+          class: 'mini-boton', type: 'button', 'aria-label': `Copiar ${ruta}`,
+          onclick: () => copiar(url, 'URL copiada'),
+        }, [icono('copiar')]),
+      ]));
+    });
   });
 }
 

@@ -11,6 +11,11 @@ async function buscarPorCorreo(correo) {
   return rows[0] || null;
 }
 
+async function buscarPorId(id) {
+  const { rows } = await db.query(`SELECT ${COLUMNAS_PUBLICAS} FROM usuarios WHERE id = $1`, [id]);
+  return rows[0] || null;
+}
+
 async function existeCorreo(correo) {
   const { rowCount } = await db.query('SELECT 1 FROM usuarios WHERE correo = $1', [correo]);
   return rowCount > 0;
@@ -26,4 +31,4 @@ async function crear({ nombre_usuario, correo, password_hash, rol = 'usuario' })
   return rows[0];
 }
 
-module.exports = { buscarPorCorreo, existeCorreo, crear };
+module.exports = { buscarPorCorreo, buscarPorId, existeCorreo, crear };

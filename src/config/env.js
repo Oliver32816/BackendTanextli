@@ -44,6 +44,9 @@ module.exports = Object.freeze({
   // en la cabecera Host que manda el cliente.
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'https://olo.tail0de9ec.ts.net').replace(/\/+$/, ''),
 
+  // URL del panel admin (Tailscale Serve, solo dentro de la tailnet)
+  adminPublicUrl: (process.env.ADMIN_PUBLIC_URL || `${(process.env.PUBLIC_BASE_URL || 'https://olo.tail0de9ec.ts.net').replace(/\/+$/, '')}:9443`).replace(/\/+$/, ''),
+
   // Carpetas de archivos que sirve el servidor
   multimediaPath: process.env.MULTIMEDIA_PATH,
   imagenesPath: process.env.IMAGENES_PATH,

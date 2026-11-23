@@ -1,12 +1,22 @@
-// GET /progreso/:usuario_id, POST /progreso  (montadas en /api y /api/v1)
+// GET /progreso, GET /progreso/:usuario_id, POST /progreso  (montadas en /api y /api/v1)
 // Fase 3: el usuario saldrá del token JWT y no del body/URL.
 const { Router } = require('express');
 const validate = require('../../middlewares/validate');
 const asyncHandler = require('../../utils/asyncHandler');
 const schemas = require('./progreso.schemas');
 const controller = require('./progreso.controller');
+const { soloEquipo } = require('../../middlewares/security');
 
 const router = Router();
+
+// GET /progreso?usuario_id=1 → progreso de ese usuario (igual que /progreso/1).
+// Sin usuario_id → progreso de todos, solo para dispositivos de la tailnet.
+router.get(
+  '/progreso',
+  validate(schemas.consulta, 'query', 'usuario_id inválido.'),
+  (req, res, next) => (req.validated.query.usuario_id ? next() : soloEquipo(req, res, next)),
+  asyncHandler(controller.consultar)
+);
 
 router.get(
   '/progreso/:usuario_id',

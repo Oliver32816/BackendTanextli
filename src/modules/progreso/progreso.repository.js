@@ -1,9 +1,8 @@
 // SQL del progreso de aprendizaje.
 const db = require('../../config/db');
 
-async function listarPorUsuario(usuarioId) {
-  const { rows } = await db.query(
-    `SELECT p.id,
+const CONSULTA = `
+     SELECT p.id,
             p.usuario_id,
             p.categoria_id,
             c.nombre AS categoria,
@@ -15,11 +14,16 @@ async function listarPorUsuario(usuarioId) {
             p.ultima_practica
      FROM progreso_usuarios p
      LEFT JOIN categorias c ON p.categoria_id = c.id
-     LEFT JOIN palabras pal ON p.palabra_id = pal.id
-     WHERE p.usuario_id = $1
-     ORDER BY p.ultima_practica DESC`,
-    [usuarioId]
-  );
+     LEFT JOIN palabras pal ON p.palabra_id = pal.id`;
+
+async function listarPorUsuario(usuarioId) {
+  const { rows } = await db.query(`${CONSULTA} WHERE p.usuario_id = $1 ORDER BY p.ultima_practica DESC`, [usuarioId]);
+  return rows;
+}
+
+// Todo el progreso (vista del equipo). Limitado para no devolver respuestas enormes.
+async function listarTodo() {
+  const { rows } = await db.query(`${CONSULTA} ORDER BY p.ultima_practica DESC LIMIT 1000`);
   return rows;
 }
 
@@ -38,4 +42,4 @@ async function registrar({ usuario_id, palabra_id, categoria_id, completado }) {
   return rows[0];
 }
 
-module.exports = { listarPorUsuario, registrar };
+module.exports = { listarPorUsuario, listarTodo, registrar };

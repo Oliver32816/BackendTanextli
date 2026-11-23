@@ -3,6 +3,7 @@ const { z } = require('zod');
 const id = z.coerce.number().int().positive();
 
 const porUsuario = z.object({ usuario_id: id });
+const consulta = z.object({ usuario_id: id.optional() });
 
 const registrar = z.object({
   usuario_id: id,
@@ -12,4 +13,4 @@ const registrar = z.object({
   completado: z.union([z.boolean(), z.enum(['true', 'false']).transform((v) => v === 'true')]).optional(),
 });
 
-module.exports = { porUsuario, registrar };
+module.exports = { porUsuario, consulta, registrar };

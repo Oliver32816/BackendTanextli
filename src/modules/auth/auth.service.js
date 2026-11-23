@@ -1,8 +1,29 @@
 // Reglas de registro e inicio de sesión.
+const jwt = require('jsonwebtoken');
+const config = require('../../config/env');
 const repo = require('./auth.repository');
 const { conflict, unauthorized } = require('../../utils/httpError');
 
 const CREDENCIALES_INVALIDAS = 'Correo electrónico o contraseña incorrectos.';
+const SESION_INVALIDA = 'Sesión inválida o expirada. Inicia sesión de nuevo.';
+const DURACION_TOKEN = '7d';
+
+// Token para que la app recuerde la sesión (GET /api/perfil). Solo lleva el id y el rol.
+function crearToken(usuario) {
+  return jwt.sign({ id: usuario.id, rol: usuario.rol || 'usuario' }, config.jwtSecret, { expiresIn: DURACION_TOKEN });
+}
+
+async function usuarioDelToken(token) {
+  let datos;
+  try {
+    datos = jwt.verify(token, config.jwtSecret);
+  } catch {
+    throw unauthorized(SESION_INVALIDA);
+  }
+  const usuario = await repo.buscarPorId(datos.id);
+  if (!usuario) throw unauthorized(SESION_INVALIDA);
+  return usuario;
+}
 
 // Punto único de manejo de contraseñas.
 // Hoy la base guarda texto plano (así funciona el login actual). En la fase 2, tras ampliar
@@ -37,4 +58,4 @@ async function iniciarSesion({ correo, password }) {
   return sinPassword(usuario);
 }
 
-module.exports = { registrar, iniciarSesion, prepararPassword };
+module.exports = { registrar, iniciarSesion, prepararPassword, crearToken, usuarioDelToken };

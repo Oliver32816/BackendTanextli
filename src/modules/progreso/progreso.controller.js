@@ -5,9 +5,15 @@ async function obtener(req, res) {
   res.json({ estado: 'EXITO', total_registros: progreso.length, progreso });
 }
 
+async function consultar(req, res) {
+  const { usuario_id: usuarioId } = req.validated.query;
+  const progreso = usuarioId ? await repo.listarPorUsuario(usuarioId) : await repo.listarTodo();
+  res.json({ estado: 'EXITO', total_registros: progreso.length, progreso });
+}
+
 async function registrar(req, res) {
   const data = await repo.registrar(req.validated.body);
   res.json({ estado: 'EXITO', mensaje: 'Progreso registrado correctamente', data });
 }
 
-module.exports = { obtener, registrar };
+module.exports = { obtener, consultar, registrar };

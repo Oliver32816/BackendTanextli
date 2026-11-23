@@ -5,7 +5,9 @@ const path = require('path');
 const express = require('express');
 const media = require('../modules/media/media.routes');
 const imagenes = require('../modules/imagenes/imagenes.routes');
+const config = require('../config/env');
 const { responderSinAcceso } = require('../utils/sinAcceso');
+const { esEquipoEnPuertoPublico } = require('../utils/tailnet');
 
 const WEB = path.join(__dirname, '..', '..', 'web');
 
@@ -26,12 +28,15 @@ router.use('/galeria-imagenes', imagenes.galeriaRouter); // /galeria-imagenes/im
 router.use('/portal/assets', estatico('shared', '1h'));
 router.use('/portal', estatico('public'));
 
-// El panel y la API de administración no existen en el puerto público:
-// quien los busque desde internet ve "No tienes acceso a esta función".
-router.all(
-  ['/admin', '/admin/*', '/api/admin', '/api/admin/*', '/api/usuarios', '/api/v1/admin', '/api/v1/admin/*', '/api/v1/usuarios'],
-  responderSinAcceso
-);
+// Botón "Usuarios" del portal: los dispositivos de la tailnet pasan al panel (puerto 9443);
+// desde internet se ve "No tienes acceso a esta función".
+router.get(['/admin', '/admin/*'], (req, res, next) => {
+  if (esEquipoEnPuertoPublico(req)) return res.redirect(302, `${config.adminPublicUrl}${req.originalUrl}`);
+  return next();
+});
+
+// El panel y la API de administración no existen en el puerto público
+router.all(['/admin', '/admin/*', '/api/admin', '/api/admin/*', '/api/v1/admin', '/api/v1/admin/*'], responderSinAcceso);
 
 // URLs anteriores → páginas nuevas (redirección permanente)
 router.get(['/api/media', '/explorador/audios'], (req, res) => res.redirect(301, '/portal/audios/'));

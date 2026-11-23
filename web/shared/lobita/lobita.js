@@ -2,6 +2,7 @@
 // Uso en HTML:  <div data-lobita data-tamano="300" data-rutina="portal"></div>
 //          o:   <div data-lobita data-estado="saludando" data-entrada="rebote"></div>
 //          data-globo="false" → hace los gestos pero sin globos de texto
+//          data-tamano-movil="110" → tamaño en celulares (≤ 720 px)
 // Uso en JS:    const lobita = crearLobita(nodo, { estado: 'feliz', tamano: 240 }); lobita.estado('pirueta');
 // Los movimientos de cada estado viven en lobita.css (mismo archivo que usa la app).
 //
@@ -193,7 +194,9 @@ function construir(entrada) {
 }
 
 export function crearLobita(contenedor, opciones = {}) {
-  const tamano = Number(opciones.tamano) || 240;
+  // En pantallas angostas usa tamanoMovil (data-tamano-movil) si se indicó
+  const movil = opciones.tamanoMovil && window.matchMedia('(max-width: 720px)').matches;
+  const tamano = Number(movil ? opciones.tamanoMovil : opciones.tamano) || 240;
   const { mxa, orejaI, orejaD } = construir(opciones.entrada);
   const globo = div('mxa-globo');
   const flota = div('mxa-flota oculto', [globo]);
@@ -385,6 +388,7 @@ export function iniciarLobitas(raiz = document) {
     const lobita = crearLobita(nodo, {
       estado: nodo.dataset.estado,
       tamano: nodo.dataset.tamano,
+      tamanoMovil: nodo.dataset.tamanoMovil,
       rutina: nodo.dataset.rutina,
       entrada: nodo.dataset.entrada,
       espejo: nodo.dataset.espejo === 'true',

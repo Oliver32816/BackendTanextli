@@ -6,7 +6,7 @@ const MENSAJE = 'No tienes acceso a esta función.';
 
 function responderSinAcceso(req, res) {
   if (req.originalUrl.startsWith('/api/')) {
-    return res.status(403).json({ estado: 'ERROR', mensaje: MENSAJE });
+    return res.status(403).json({ estado: 'ERROR', mensaje: MENSAJE, error: MENSAJE });
   }
   return res.status(403).sendFile(PAGINA);
 }
