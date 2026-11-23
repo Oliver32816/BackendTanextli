@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Galería de imágenes · Tanextli</title>
+  <meta name="description" content="Galería de imágenes de Tanextli organizada por categorías para las lecciones de náhuatl.">
+  <link rel="icon" href="/portal/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/portal/assets/css/tanextli.css">
+  <link rel="stylesheet" href="/portal/assets/lobita/lobita.css">
+  <script src="/portal/assets/js/tema.js"></script>
+  <script type="module" src="/portal/assets/js/layout.js"></script>
+  <script type="module" src="./imagenes.js"></script>
+</head>
+<body data-zona="publico" data-pagina="imagenes">
+  <main id="contenido">
+    <section class="hero hero-compacto">
+      <div class="contenedor hero-con-lobita">
+        <div>
+        <span class="insignia revelar">Galería de imágenes</span>
+        <h1 class="revelar retraso-1">Imágenes para <span class="degradado">cada lección</span></h1>
+        <p class="lead revelar retraso-2">Ilustraciones organizadas por categoría. Ábrelas en grande, navega con las flechas del teclado y copia su URL.</p>
+        <div class="hero-acciones revelar retraso-3">
+          <a class="boton boton-secundario" href="/galeria-imagenes/api/imagenes" target="_blank" rel="noopener"><span data-icono="codigo"></span>JSON para la app móvil</a>
+        </div>
+        </div>
+        <div class="lobita-lateral" id="lobita" data-lobita data-tamano="170" data-rutina="imagenes" data-entrada="asomar" data-interactiva="true" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <div class="contenedor">
+      <div class="herramientas">
+        <label class="buscador">
+          <span class="sr-only">Buscar imagen</span>
+          <span data-icono="buscar"></span>
+          <input type="search" id="buscar" placeholder="Buscar: águila, rojo, mamá…" autocomplete="off">
+        </label>
+        <span class="contador" id="contador" aria-live="polite"></span>
+        <div class="chips" id="categorias" role="group" aria-label="Filtrar por categoría"></div>
+      </div>
+
+      <div class="galeria" id="galeria">
+        <div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>
+        <div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="visor" id="visor" role="dialog" aria-modal="true" aria-label="Imagen ampliada" aria-hidden="true">
+    <button class="cerrar" type="button" aria-label="Cerrar"><span data-icono="cerrar"></span></button>
+    <button class="anterior" type="button" aria-label="Imagen anterior"><span data-icono="izquierda"></span></button>
+    <button class="siguiente" type="button" aria-label="Imagen siguiente"><span data-icono="derecha"></span></button>
+    <figure>
+      <div class="lienzo"><img id="visor-imagen" alt=""></div>
+      <figcaption>
+        <div>
+          <strong id="visor-titulo"></strong><br>
+          <small id="visor-ruta"></small>
+        </div>
+        <div class="hero-acciones">
+          <button class="boton boton-chico" type="button" id="visor-copiar"><span data-icono="copiar"></span>Copiar URL</button>
+          <a class="boton boton-chico boton-secundario" id="visor-abrir" target="_blank" rel="noopener"><span data-icono="externo"></span>Abrir</a>
+        </div>
+      </figcaption>
+    </figure>
+  </div>
+</body>
+</html>

@@ -1,37 +1,27 @@
+# Solo PostgreSQL corre en Docker. La API y el panel corren con PM2 (ecosystem.config.js).
+# Las credenciales se leen del archivo .env de esta carpeta.
 services:
   db:
     image: postgres:15-alpine
     container_name: tanextli_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tanextli_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432"
+      # Solo localhost: Docker se salta el firewall (ufw) si se publica en 0.0.0.0
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: always
-
-  app:
-    build: .
-    container_name: tanextli_backend
-    ports:
-      - "3000:3001"
-    environment:
-      - PORT=3001
-      - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=tanextli_db
-      - DB_PORT=5432
-      - JWT_SECRET=tanextli_secret_key_2026
-    volumes:
-      - .:/app
-      - /home/olo/tanextli-project/Multimedia/AudiosTanextli:/home/olo/tanextli-project/Multimedia/AudiosTanextli
-    depends_on:
-      - db
-    restart: always
+      # Solo se ejecutan cuando el volumen está vacío (instalación nueva), en orden alfabético
+      - ./init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      - ./db/migrations/002_contenido_nahuatl.sql:/docker-entrypoint-initdb.d/002_contenido_nahuatl.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Usuarios · Panel Tanextli</title>
+  <link rel="icon" href="/portal/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/portal/assets/css/tanextli.css">
+  <script src="/portal/assets/js/tema.js"></script>
+  <script type="module" src="/portal/assets/js/layout.js"></script>
+  <script type="module" src="./usuarios.js"></script>
+</head>
+<body data-zona="admin" data-pagina="usuarios">
+  <main id="contenido">
+    <section class="hero hero-compacto">
+      <div class="contenedor">
+        <span class="insignia revelar">Vista de solo lectura</span>
+        <h1 class="revelar retraso-1">Usuarios <span class="degradado">registrados</span></h1>
+        <p class="lead revelar retraso-2">Consulta quién usa Tanextli. Para registrar, editar o eliminar cuentas entra a Gestión.</p>
+        <div class="hero-acciones revelar retraso-3">
+          <a class="boton" href="/admin/gestion/"><span data-icono="gestion"></span>Ir a gestión</a>
+          <a class="boton boton-secundario" href="/api/admin/usuarios" target="_blank" rel="noopener"><span data-icono="codigo"></span>Ver JSON</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="contenedor">
+      <div class="rejilla rejilla-4 seccion">
+        <article class="tarjeta estadistica revelar"><div class="valor" data-kpi="total">—</div><div class="rotulo">Cuentas en total</div><span class="icono-fondo"><span data-icono="usuarios"></span></span></article>
+        <article class="tarjeta estadistica revelar retraso-1"><div class="valor" data-kpi="usuarios">—</div><div class="rotulo">Estudiantes</div><span class="icono-fondo"><span data-icono="libro"></span></span></article>
+        <article class="tarjeta estadistica revelar retraso-2"><div class="valor" data-kpi="admins">—</div><div class="rotulo">Administradores</div><span class="icono-fondo"><span data-icono="llave"></span></span></article>
+        <article class="tarjeta estadistica revelar retraso-3"><div class="valor" data-kpi="nuevos">—</div><div class="rotulo">Nuevos en 7 días</div><span class="icono-fondo"><span data-icono="rayo"></span></span></article>
+      </div>
+
+      <div class="herramientas">
+        <label class="buscador">
+          <span class="sr-only">Buscar usuario</span>
+          <span data-icono="buscar"></span>
+          <input type="search" id="buscar" placeholder="Buscar por nombre o correo…" autocomplete="off">
+        </label>
+        <span class="contador" id="contador" aria-live="polite"></span>
+        <div class="chips" id="roles" role="group" aria-label="Filtrar por rol"></div>
+      </div>
+
+      <div class="tabla-envoltura">
+        <table class="tabla">
+          <thead>
+            <tr><th scope="col">Persona</th><th scope="col">Rol</th><th scope="col">Registro</th><th scope="col">Conexión</th></tr>
+          </thead>
+          <tbody id="filas"><tr><td colspan="4"><div class="esqueleto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audios en náhuatl · Tanextli</title>
+  <meta name="description" content="Explorador de audios de Tanextli: palabras y frases en náhuatl grabadas por un hablante.">
+  <link rel="icon" href="/portal/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/portal/assets/css/tanextli.css">
+  <link rel="stylesheet" href="/portal/assets/lobita/lobita.css">
+  <script src="/portal/assets/js/tema.js"></script>
+  <script type="module" src="/portal/assets/js/layout.js"></script>
+  <script type="module" src="./audios.js"></script>
+</head>
+<body data-zona="publico" data-pagina="audios">
+  <main id="contenido">
+    <section class="hero hero-compacto">
+      <div class="contenedor hero-con-lobita">
+        <h1 class="revelar">Escucha el <span class="degradado">náhuatl</span></h1>
+        <div class="lobita-lateral" id="lobita" data-lobita data-tamano="170" data-rutina="audios" data-entrada="asomar" data-interactiva="true" data-globo="false" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <div class="contenedor">
+      <div class="herramientas">
+        <label class="buscador">
+          <span class="sr-only">Buscar audio</span>
+          <span data-icono="buscar"></span>
+          <input type="search" id="buscar" placeholder="Buscar audio…" autocomplete="off">
+        </label>
+        <span class="contador" id="contador" aria-live="polite"></span>
+        <div class="chips" id="categorias" role="group" aria-label="Filtrar por categoría"></div>
+      </div>
+
+      <div id="lista">
+        <div class="rejilla rejilla-3">
+          <div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>
+          <div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

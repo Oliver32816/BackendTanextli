@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tanextli · Recursos para aprender náhuatl</title>
+  <meta name="description" content="Portal de recursos de Tanextli: audios grabados por hablantes, imágenes y API abierta para aprender náhuatl.">
+  <link rel="icon" href="/portal/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/portal/assets/css/tanextli.css">
+  <link rel="stylesheet" href="/portal/assets/lobita/lobita.css">
+  <script src="/portal/assets/js/tema.js"></script>
+  <script type="module" src="/portal/assets/js/layout.js"></script>
+  <script type="module" src="./inicio.js"></script>
+</head>
+<body data-zona="publico" data-pagina="inicio">
+  <main id="contenido">
+    <section class="hero">
+      <div class="contenedor hero-grid">
+        <div>
+          <span class="insignia revelar">Portal de recursos · Tanextli</span>
+          <h1 class="revelar retraso-1">Recursos para aprender <span class="degradado">náhuatl</span></h1>
+          <p class="lead revelar retraso-2">
+            Audios grabados por un hablante de náhuatl, imágenes ilustrativas y una API abierta
+            que alimenta la app web y la app móvil de Tanextli.
+          </p>
+          <div class="hero-acciones revelar retraso-3">
+            <a class="boton" href="/portal/audios/"><span data-icono="audio"></span>Escuchar audios</a>
+            <a class="boton boton-secundario" href="/portal/imagenes/"><span data-icono="imagen"></span>Ver imágenes</a>
+          </div>
+        </div>
+        <div class="ilustracion revelar retraso-2" aria-hidden="true">
+          <div class="orbe"></div>
+          <div class="lobita-hero" data-lobita data-tamano="270" data-rutina="portal" data-entrada="rebote" data-interactiva="true" title="¡Tócame!"></div>
+          <div class="burbuja b1">Piali <small>Hola</small></div>
+          <div class="burbuja b2">Cenchan <small>Familia</small></div>
+          <div class="burbuja b3">Tlasohkamatik <small>Gracias</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor rejilla rejilla-4" id="estadisticas">
+        <article class="tarjeta estadistica revelar">
+          <div class="valor" data-estadistica="audios">—</div>
+          <div class="rotulo">Audios disponibles</div>
+          <span class="icono-fondo"><span data-icono="audio"></span></span>
+        </article>
+        <article class="tarjeta estadistica revelar retraso-1">
+          <div class="valor" data-estadistica="imagenes">—</div>
+          <div class="rotulo">Imágenes</div>
+          <span class="icono-fondo"><span data-icono="imagen"></span></span>
+        </article>
+        <article class="tarjeta estadistica revelar retraso-2">
+          <div class="valor" data-estadistica="palabras">—</div>
+          <div class="rotulo">Palabras y frases</div>
+          <span class="icono-fondo"><span data-icono="libro"></span></span>
+        </article>
+        <article class="tarjeta estadistica revelar retraso-3">
+          <div class="valor" data-estadistica="categorias">—</div>
+          <div class="rotulo">Categorías</div>
+          <span class="icono-fondo"><span data-icono="carpeta"></span></span>
+        </article>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor">
+        <div class="seccion-titulo revelar">
+          <div>
+            <h2>Explora el portal</h2>
+            <p>Todo el material está organizado por categorías, igual que en las lecciones de la app.</p>
+          </div>
+        </div>
+        <div class="rejilla rejilla-3">
+          <a class="tarjeta tarjeta-interactiva revelar" href="/portal/audios/">
+            <div class="icono-circulo"><span data-icono="audio"></span></div>
+            <h3>Audios</h3>
+            <p>Escucha cada palabra y frase en la voz de un hablante. Busca, filtra y copia la URL para usarla en la app.</p>
+            <span class="ir">Ir a audios <span data-icono="flecha"></span></span>
+          </a>
+          <a class="tarjeta tarjeta-interactiva revelar retraso-1" href="/portal/imagenes/">
+            <div class="icono-circulo naranja"><span data-icono="imagen"></span></div>
+            <h3>Imágenes</h3>
+            <p>Galería de ilustraciones por categoría: animales, colores, familia, números, objetos y más.</p>
+            <span class="ir">Ir a la galería <span data-icono="flecha"></span></span>
+          </a>
+          <a class="tarjeta tarjeta-interactiva revelar retraso-2" href="/portal/privacidad/">
+            <div class="icono-circulo morado"><span data-icono="escudo"></span></div>
+            <h3>Privacidad</h3>
+            <p>Qué datos usamos, para qué y cómo los protegemos. Especial cuidado con niñas y niños.</p>
+            <span class="ir">Leer el aviso <span data-icono="flecha"></span></span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <div class="contenedor rejilla rejilla-2">
+        <article class="tarjeta revelar">
+          <div class="icono-circulo azul"><span data-icono="codigo"></span></div>
+          <h3>API para desarrolladores</h3>
+          <p>La app web y la app móvil consumen estos recursos. Todas las respuestas son JSON.</p>
+          <div id="endpoints"></div>
+        </article>
+        <article class="tarjeta revelar retraso-1">
+          <div class="icono-circulo naranja"><span data-icono="rayo"></span></div>
+          <h3>Lo que viene</h3>
+          <p>Tanextli seguirá creciendo con funciones que usan los datos de práctica para enseñar mejor:</p>
+          <ul class="prosa">
+            <li><strong>Reconocimiento de voz:</strong> la app escucha tu pronunciación y la compara con la palabra correcta.</li>
+            <li><strong>Realidad aumentada:</strong> enfoca un objeto con la cámara y descubre cómo se dice en náhuatl.</li>
+            <li><strong>Analítica de aprendizaje:</strong> qué palabras cuestan más trabajo, para mejorar las lecciones.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

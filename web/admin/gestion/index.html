@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Gestión de usuarios · Panel Tanextli</title>
+  <link rel="icon" href="/portal/assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/portal/assets/css/tanextli.css">
+  <script src="/portal/assets/js/tema.js"></script>
+  <script type="module" src="/portal/assets/js/layout.js"></script>
+  <script type="module" src="./gestion.js"></script>
+</head>
+<body data-zona="admin" data-pagina="gestion">
+  <main id="contenido">
+    <section class="hero hero-compacto">
+      <div class="contenedor">
+        <span class="insignia revelar">Administración</span>
+        <h1 class="revelar retraso-1">Gestión de <span class="degradado">usuarios y roles</span></h1>
+        <p class="lead revelar retraso-2">Registra cuentas, asigna roles, edita datos o elimina usuarios. Cada acción pide confirmación.</p>
+      </div>
+    </section>
+
+    <div class="contenedor">
+      <div class="rejilla rejilla-2 seccion">
+        <form class="tarjeta revelar" id="form-registro" novalidate>
+          <div class="icono-circulo"><span data-icono="usuarioMas"></span></div>
+          <h2>Registrar usuario</h2>
+          <div class="grupo">
+            <label class="etiqueta" for="r-nombre">Nombre de usuario</label>
+            <input class="campo" id="r-nombre" name="nombre_usuario" maxlength="50" required autocomplete="off">
+          </div>
+          <div class="grupo">
+            <label class="etiqueta" for="r-correo">Correo electrónico</label>
+            <input class="campo" id="r-correo" name="correo" type="email" maxlength="50" required autocomplete="off">
+          </div>
+          <div class="grupo">
+            <label class="etiqueta" for="r-password">Contraseña inicial</label>
+            <div class="fila-campo">
+              <input class="campo mono" id="r-password" name="password" type="password" minlength="8" maxlength="50" required autocomplete="new-password">
+              <button class="boton-icono" type="button" id="ver-password" aria-label="Mostrar contraseña"><span data-icono="candado"></span></button>
+              <button class="boton-icono" type="button" id="generar-password" aria-label="Generar contraseña segura"><span data-icono="dado"></span></button>
+            </div>
+            <div class="medidor" aria-hidden="true"><i id="medidor"></i></div>
+            <p class="ayuda" id="ayuda-password">Mínimo 8 caracteres. Compártela por un medio seguro.</p>
+          </div>
+          <div class="grupo">
+            <label class="etiqueta" for="r-rol">Rol</label>
+            <select class="campo" id="r-rol" name="rol">
+              <option value="usuario">Estudiante (usuario)</option>
+              <option value="admin">Administrador</option>
+              <option value="superuser">Superusuario</option>
+            </select>
+          </div>
+          <button class="boton" type="submit"><span data-icono="check"></span>Registrar</button>
+        </form>
+
+        <aside class="tarjeta revelar retraso-1">
+          <div class="icono-circulo naranja"><span data-icono="escudo"></span></div>
+          <h2>Buenas prácticas</h2>
+          <ul class="prosa">
+            <li>Asigna <strong>admin</strong> o <strong>superusuario</strong> solo a quien lo necesite.</li>
+            <li>Las contraseñas no se pueden ver: se guardarán cifradas. Si alguien la olvida, usa <strong>Restablecer</strong> (disponible en la fase 3) para generar una temporal.</li>
+            <li>Eliminar una cuenta borra también su progreso. Esta acción no se puede deshacer.</li>
+            <li>Este panel solo existe dentro de la red privada de Tailscale para las personas autorizadas.</li>
+          </ul>
+        </aside>
+      </div>
+
+      <div class="seccion-titulo">
+        <div><h2>Cuentas</h2><p>Busca una cuenta y usa sus acciones.</p></div>
+      </div>
+      <div class="herramientas">
+        <label class="buscador">
+          <span class="sr-only">Buscar usuario</span>
+          <span data-icono="buscar"></span>
+          <input type="search" id="buscar" placeholder="Buscar por nombre o correo…" autocomplete="off">
+        </label>
+        <span class="contador" id="contador" aria-live="polite"></span>
+      </div>
+      <div class="tabla-envoltura">
+        <table class="tabla">
+          <thead>
+            <tr><th scope="col">Persona</th><th scope="col">Rol</th><th scope="col">Registro</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
+          </thead>
+          <tbody id="filas"><tr><td colspan="4"><div class="esqueleto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal" id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="titulo-editar" aria-hidden="true">
+    <form class="caja" id="form-editar" novalidate>
+      <h3 id="titulo-editar">Editar usuario</h3>
+      <div class="grupo">
+        <label class="etiqueta" for="e-nombre">Nombre de usuario</label>
+        <input class="campo" id="e-nombre" maxlength="50" required>
+      </div>
+      <div class="grupo">
+        <label class="etiqueta" for="e-correo">Correo electrónico</label>
+        <input class="campo" id="e-correo" type="email" maxlength="50" required>
+      </div>
+      <div class="grupo">
+        <label class="etiqueta" for="e-rol">Rol</label>
+        <select class="campo" id="e-rol">
+          <option value="usuario">Estudiante (usuario)</option>
+          <option value="admin">Administrador</option>
+          <option value="superuser">Superusuario</option>
+        </select>
+      </div>
+      <div class="pie-modal">
+        <button class="boton boton-secundario" type="button" data-cerrar>Cancelar</button>
+        <button class="boton" type="submit"><span data-icono="check"></span>Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="modal-eliminar" role="alertdialog" aria-modal="true" aria-labelledby="titulo-eliminar" aria-hidden="true">
+    <form class="caja" id="form-eliminar" novalidate>
+      <h3 id="titulo-eliminar">Eliminar cuenta</h3>
+      <p>Se borrará la cuenta de <strong id="eliminar-nombre"></strong> y todo su progreso. <strong>No se puede deshacer.</strong></p>
+      <div class="grupo">
+        <label class="etiqueta" for="eliminar-confirmacion">Para confirmar, escribe el correo: <code id="eliminar-correo"></code></label>
+        <input class="campo" id="eliminar-confirmacion" autocomplete="off">
+      </div>
+      <div class="pie-modal">
+        <button class="boton boton-secundario" type="button" data-cerrar>Cancelar</button>
+        <button class="boton boton-peligro" type="submit" id="confirmar-eliminar" disabled><span data-icono="basura"></span>Eliminar definitivamente</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
