@@ -5,7 +5,11 @@ const COLUMNAS_PUBLICAS = 'id, nombre_usuario, correo, rol, creado_en';
 
 async function buscarPorCorreo(correo) {
   const { rows } = await db.query(
-    `SELECT ${COLUMNAS_PUBLICAS}, password_hash FROM usuarios WHERE correo = $1`,
+    // Sin distinguir mayúsculas; si hubiera duplicados viejos, primero la coincidencia exacta
+    `SELECT ${COLUMNAS_PUBLICAS}, password_hash FROM usuarios
+     WHERE lower(correo) = lower($1)
+     ORDER BY (correo = $1) DESC, id
+     LIMIT 1`,
     [correo]
   );
   return rows[0] || null;
@@ -17,7 +21,7 @@ async function buscarPorId(id) {
 }
 
 async function existeCorreo(correo) {
-  const { rowCount } = await db.query('SELECT 1 FROM usuarios WHERE correo = $1', [correo]);
+  const { rowCount } = await db.query('SELECT 1 FROM usuarios WHERE lower(correo) = lower($1)', [correo]);
   return rowCount > 0;
 }
 
@@ -31,4 +35,8 @@ async function crear({ nombre_usuario, correo, password_hash, rol = 'usuario' })
   return rows[0];
 }
 
-module.exports = { buscarPorCorreo, buscarPorId, existeCorreo, crear };
+async function actualizarPassword(id, passwordHash) {
+  await db.query('UPDATE usuarios SET password_hash = $2 WHERE id = $1', [id, passwordHash]);
+}
+
+module.exports = { buscarPorCorreo, buscarPorId, existeCorreo, crear, actualizarPassword };

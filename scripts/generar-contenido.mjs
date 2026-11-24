@@ -4,7 +4,7 @@
 //
 //   node scripts/generar-contenido.mjs <ruta-a-contenido.json>
 //
-// Lee:     init.sql (id actuales de categorías y palabras) y contenido.json (español y náhuatl)
+// Lee:     db/legacy/init_original.sql (id originales de categorías y palabras) y contenido.json (español y náhuatl)
 // Escribe: db/migrations/002_contenido_nahuatl.sql
 //          db/contenido-ids.json       id fijo de cada palabra (NO borrar: el progreso depende de ellos)
 //          db/revision/palabras-sin-contenido.csv  palabras de init.sql que no están en contenido.json
@@ -23,7 +23,7 @@ if (!rutaContenido) {
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ARCHIVO_IDS = path.join(RAIZ, 'db', 'contenido-ids.json');
 const contenido = JSON.parse(fs.readFileSync(rutaContenido, 'utf8'));
-const initSql = fs.readFileSync(path.join(RAIZ, 'init.sql'), 'utf8');
+const initSql = fs.readFileSync(path.join(RAIZ, 'db', 'legacy', 'init_original.sql'), 'utf8');
 
 // ---------- Utilidades ----------
 const BOM = String.fromCharCode(0xfeff); // para que Excel abra los CSV con acentos
@@ -57,6 +57,11 @@ const CATEGORIAS = {
   objetos: { id: 24, subs: { hogar: 26, 'objetos-de-casa': 27, 'objetos-diversos': 28, cocina: 25 } },
   'partes-del-cuerpo': { id: 29, subs: { 'cabeza-y-rostro': 31, 'cuerpo-y-extremidades': 30 } },
 };
+// Orden de las lecciones cuando el diseño (Figma) difiere del orden de contenido.json.
+// El número de lección que guarda el progreso es esta posición: no cambiarla con usuarios activos.
+const ORDEN_LECCIONES = {
+  'frases-comunes': ['saludos', 'conversacion', 'expresiones', 'despedida'],
+};
 // La misma palabra escrita distinto en contenido.json y en init.sql (clave contenido → clave init.sql)
 const EQUIVALENCIAS = {
   madre: 'mama', padre: 'papa', pavo: 'guajolote', camisa: 'camiza', naranja: 'anaranjado',
@@ -76,7 +81,11 @@ contenido.categorias.forEach((cat, iCat) => {
   if (!cfg) { avisos.push(`Categoría sin id asignado: ${cat.id}`); return; }
   categorias.push({ id: cfg.id, padre: null, nombre: cat.nombre, slug: cat.id, orden: iCat + 1, nahuatl: limpio(cat.nahuatl), disponible: cat.disponible !== false });
 
-  cat.subcategorias.forEach((sub, iSub) => {
+  const orden = ORDEN_LECCIONES[cat.id];
+  const subcategorias = orden
+    ? [...cat.subcategorias].sort((a, b) => orden.indexOf(a.id) - orden.indexOf(b.id))
+    : cat.subcategorias;
+  subcategorias.forEach((sub, iSub) => {
     const idSub = cfg.subs[sub.id];
     if (!idSub) { avisos.push(`Subcategoría sin id asignado: ${cat.id} › ${sub.id}`); return; }
     categorias.push({ id: idSub, padre: cfg.id, nombre: sub.nombre, slug: sub.id, orden: iSub + 1, nahuatl: null, disponible: cat.disponible !== false });

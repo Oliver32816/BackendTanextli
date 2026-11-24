@@ -1,5 +1,5 @@
-// Validación de registro y login. Los límites de longitud coinciden con las columnas
-// actuales de la tabla usuarios (VARCHAR(50)); se amplían con la migración de la fase 2.
+// Validación de registro y login. Los límites coinciden con la tabla usuarios después de la
+// migración 003 (nombre 80, correo 254). bcrypt usa como máximo 72 bytes de la contraseña.
 const { z } = require('zod');
 
 // Las apps mandan los mismos datos con distintos nombres: la web envía también "email" y
@@ -14,9 +14,9 @@ const conAlias = (esquema) => z.preprocess((cuerpo) => {
 }, esquema);
 
 const registro = conAlias(z.object({
-  nombre_usuario: z.string().trim().min(1).max(50),
-  correo: z.string().trim().min(3).max(50),
-  password: z.string().min(1).max(50),
+  nombre_usuario: z.string().trim().min(1).max(80),
+  correo: z.string().trim().min(3).max(254),
+  password: z.string().min(1).max(72),
 }));
 
 const login = conAlias(z.object({

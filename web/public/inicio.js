@@ -33,9 +33,15 @@ const ENDPOINTS = [
     ['POST', '/api/login', 'Inicia sesión (correo, password); devuelve el usuario y un token'],
     ['GET', '/api/perfil', 'Usuario de la sesión (Authorization: Bearer <token>)'],
   ]],
-  ['Progreso', [
-    ['GET', '/api/progreso/1', 'Progreso de un usuario por su id'],
-    ['POST', '/api/progreso', 'Guarda una palabra practicada (usuario_id, palabra_id, categoria_id, completado)'],
+  ['Progreso (id del usuario o "yo" con su token)', [
+    ['GET', '/api/progreso/1/categorias', 'Avance de cada categoría: porcentaje y siguiente lección'],
+    ['GET', '/api/progreso/1/categorias/familia', 'Lecciones con estado (completada, disponible, bloqueada) y desempeño'],
+    ['POST', '/api/progreso/lecciones', 'Lección terminada con sus actividades y palabras (una sola llamada)'],
+    ['GET', '/api/progreso/1/lecciones', 'Lecciones completadas: { familia: [1, 2], colores: [1] }'],
+    ['GET', '/api/progreso/1/resumen', 'Avance por categoría: lecciones y palabras practicadas'],
+    ['GET', '/api/progreso/1', 'Palabras practicadas, veces y mejor puntaje'],
+    ['POST', '/api/progreso', 'Guarda una palabra practicada (usuario_id, palabra_id, categoria_id, completado, puntaje)'],
+    ['DELETE', '/api/progreso/yo', 'Reinicia todo el avance (requiere token)'],
   ]],
   ['Contenido', [
     ['GET', '/api/categorias', 'Categorías y subcategorías'],
@@ -59,7 +65,7 @@ function pintarEndpoints() {
     rutas.forEach(([metodo, ruta, descripcion]) => {
       const url = `${location.origin}${ruta}`;
       contenedor.append(el('div', { class: 'endpoint', title: descripcion }, [
-        el('span', { class: `metodo ${metodo === 'POST' ? 'post' : ''}`, text: metodo }),
+        el('span', { class: `metodo ${{ POST: 'post', DELETE: 'delete' }[metodo] || ''}`, text: metodo }),
         el('div', { class: 'endpoint-texto' }, [
           el('code', { text: ruta, title: url }),
           el('small', { text: descripcion }),

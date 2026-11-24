@@ -15,8 +15,8 @@ async function login(req, res) {
 
 // GET /perfil con "Authorization: Bearer <token>": la app web lo usa al recargar la página
 async function perfil(req, res) {
-  const [tipo, token] = (req.get('Authorization') || '').split(' ');
-  if (tipo !== 'Bearer' || !token) throw unauthorized('Falta el token de sesión.');
+  const token = service.tokenDeLaPeticion(req);
+  if (!token) throw unauthorized('Falta el token de sesión.');
   const usuario = await service.usuarioDelToken(token);
   res.json({ estado: 'EXITO', usuario });
 }

@@ -455,6 +455,7 @@ table.tabla { width: 100%; border-collapse: collapse; min-width: 680px; }
 .endpoint + .endpoint { margin-top: .5rem; }
 .metodo { font-family: var(--fuente-mono); font-size: .72rem; font-weight: 800; padding: .2rem .5rem; border-radius: 6px; background: var(--verde-100); color: var(--primario); }
 .metodo.post { background: var(--naranja-100); color: var(--naranja-500); }
+.metodo.delete { background: color-mix(in srgb, #d9534f 14%, transparent); color: #c9302c; }
 .endpoint-texto { flex: 1; min-width: 0; display: grid; gap: .15rem; }
 .endpoint code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .endpoint small { color: var(--texto-suave); font-size: .78rem; line-height: 1.35; }

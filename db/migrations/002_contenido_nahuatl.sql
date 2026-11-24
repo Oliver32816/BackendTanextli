@@ -46,8 +46,8 @@ INSERT INTO categorias (id, nombre, categoria_padre_id, slug, orden, nombre_nahu
     (14, 'Frases comunes', NULL, 'frases-comunes', 5, NULL, true),
     (18, 'Saludos', 14, 'saludos', 1, NULL, true),
     (15, 'Conversación', 14, 'conversacion', 2, NULL, true),
-    (16, 'Despedida', 14, 'despedida', 3, NULL, true),
-    (17, 'Expresiones', 14, 'expresiones', 4, NULL, true),
+    (17, 'Expresiones', 14, 'expresiones', 3, NULL, true),
+    (16, 'Despedida', 14, 'despedida', 4, NULL, true),
     (1, 'Animales', NULL, 'animales', 6, NULL, true),
     (3, 'Animales domésticos', 1, 'animales-domesticos', 1, NULL, true),
     (2, 'Animales de granja', 1, 'animales-de-granja', 2, NULL, true),
@@ -173,12 +173,6 @@ INSERT INTO palabras (id, espanol, nahuatl, categoria_id, slug, orden) VALUES
     (67, 'De nada', 'Amo tlen', 15, 'de-nada', 5),
     (68, 'Estoy bien', 'Kwali nica nietok', 15, 'estoy-bien', 6),
     (93, 'Qué necesitas', '¿Toni tikneki?', 15, 'que-necesitas', 7),
-    -- Frases comunes › Despedida
-    (73, 'Que tengas un buen día', 'Ma kwali tonal tikpia', 16, 'que-tengas-un-buen-dia', 1),
-    (71, 'Que te vaya bien', 'Ma kwali tioj', 16, 'que-te-vaya-bien', 2),
-    (69, 'Cuídate mucho', 'Ixmopiali miak', 16, 'cuidate-mucho', 3),
-    (72, 'Que descanses', 'Ma tiyo Isewi', 16, 'que-descanses', 4),
-    (70, 'Que Dios te bendiga', 'Ma Toteotsin mitz piali', 16, 'que-dios-te-bendiga', 5),
     -- Frases comunes › Expresiones
     (82, 'Mi nombre es', 'Notokay', 17, 'mi-nombre-es', 1),
     (101, 'Te quiero', 'Nimitztlazohtla', 17, 'te-quiero', 2),
@@ -210,6 +204,12 @@ INSERT INTO palabras (id, espanol, nahuatl, categoria_id, slug, orden) VALUES
     (95, 'Sí me gusta', 'Kema nik kuelita', 17, 'si-me-gusta', 28),
     (78, 'Es fácil', 'Amo owhuiyo', 17, 'es-facil', 29),
     (98, 'Sí sé', 'Kema nik mati', 17, 'si-se', 30),
+    -- Frases comunes › Despedida
+    (73, 'Que tengas un buen día', 'Ma kwali tonal tikpia', 16, 'que-tengas-un-buen-dia', 1),
+    (71, 'Que te vaya bien', 'Ma kwali tioj', 16, 'que-te-vaya-bien', 2),
+    (69, 'Cuídate mucho', 'Ixmopiali miak', 16, 'cuidate-mucho', 3),
+    (72, 'Que descanses', 'Ma tiyo Isewi', 16, 'que-descanses', 4),
+    (70, 'Que Dios te bendiga', 'Ma Toteotsin mitz piali', 16, 'que-dios-te-bendiga', 5),
     -- Animales › Animales domésticos
     (9, 'Perro', 'Itzcuintli', 3, 'perro', 1),
     (8, 'Gato', 'Mixton', 3, 'gato', 2),

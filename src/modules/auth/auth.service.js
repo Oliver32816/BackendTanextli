@@ -1,4 +1,5 @@
 // Reglas de registro e inicio de sesión.
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../../config/env');
 const repo = require('./auth.repository');
@@ -13,6 +14,22 @@ function crearToken(usuario) {
   return jwt.sign({ id: usuario.id, rol: usuario.rol || 'usuario' }, config.jwtSecret, { expiresIn: DURACION_TOKEN });
 }
 
+// Valida el token sin consultar la base de datos: devuelve { id, rol }
+function datosDelToken(token) {
+  try {
+    const { id, rol } = jwt.verify(token, config.jwtSecret);
+    return { id: Number(id), rol: rol || 'usuario' };
+  } catch {
+    throw unauthorized(SESION_INVALIDA);
+  }
+}
+
+// Lee "Authorization: Bearer <token>". Sin cabecera devuelve null.
+function tokenDeLaPeticion(req) {
+  const [tipo, token] = (req.get('Authorization') || '').split(' ');
+  return tipo === 'Bearer' && token ? token : null;
+}
+
 async function usuarioDelToken(token) {
   let datos;
   try {
@@ -25,16 +42,19 @@ async function usuarioDelToken(token) {
   return usuario;
 }
 
-// Punto único de manejo de contraseñas.
-// Hoy la base guarda texto plano (así funciona el login actual). En la fase 2, tras ampliar
-// la columna password_hash, aquí se cambia a bcrypt y las contraseñas viejas se convierten
-// a hash automáticamente la siguiente vez que cada usuario inicie sesión.
+// Punto único de manejo de contraseñas: se guardan con bcrypt (requiere la migración 003,
+// que amplía password_hash). Las cuentas antiguas en texto plano siguen entrando y su
+// contraseña se convierte a bcrypt automáticamente en su siguiente inicio de sesión.
+const COSTO_BCRYPT = 12;
+const esHash = (guardado) => /^\$2[aby]\$\d{2}\$/.test(guardado || '');
+
 async function prepararPassword(password) {
-  return password;
+  return bcrypt.hash(password, COSTO_BCRYPT);
 }
 
 async function passwordCoincide(password, guardado) {
-  return typeof guardado === 'string' && guardado === password;
+  if (typeof guardado !== 'string' || !guardado) return false;
+  return esHash(guardado) ? bcrypt.compare(password, guardado) : guardado === password;
 }
 
 function sinPassword(usuario) {
@@ -55,7 +75,15 @@ async function iniciarSesion({ correo, password }) {
   if (!usuario || !(await passwordCoincide(password, usuario.password_hash))) {
     throw unauthorized(CREDENCIALES_INVALIDAS);
   }
+  if (!esHash(usuario.password_hash)) {
+    // Cuenta antigua en texto plano: se guarda ya con bcrypt (si falla, el login sigue)
+    try {
+      await repo.actualizarPassword(usuario.id, await prepararPassword(password));
+    } catch (err) {
+      console.warn(`[auth] No se pudo convertir la contraseña del usuario ${usuario.id}: ${err.message}`);
+    }
+  }
   return sinPassword(usuario);
 }
 
-module.exports = { registrar, iniciarSesion, prepararPassword, crearToken, usuarioDelToken };
+module.exports = { registrar, iniciarSesion, prepararPassword, crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion };

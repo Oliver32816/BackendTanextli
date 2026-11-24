@@ -12,6 +12,7 @@ module.exports = {
   HttpError,
   badRequest: (mensaje, detalles) => new HttpError(400, mensaje, detalles),
   unauthorized: (mensaje) => new HttpError(401, mensaje),
+  forbidden: (mensaje) => new HttpError(403, mensaje),
   notFound: (mensaje) => new HttpError(404, mensaje),
   conflict: (mensaje) => new HttpError(409, mensaje),
 };
