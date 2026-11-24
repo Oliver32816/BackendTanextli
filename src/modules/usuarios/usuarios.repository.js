@@ -2,7 +2,8 @@
 const db = require('../../config/db');
 
 const COLUMNAS = `id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en,
-                  proveedor, (google_id IS NOT NULL) AS con_google, debe_cambiar_password, ultimo_acceso`;
+                  proveedor, (google_id IS NOT NULL) AS con_google, debe_cambiar_password, ultimo_acceso,
+                  correo_verificado`;
 
 async function listar({ incluirSuperusuarios = true } = {}) {
   const filtro = incluirSuperusuarios ? '' : "WHERE COALESCE(rol, 'usuario') <> 'superuser'";
@@ -25,7 +26,12 @@ async function actualizar(id, { nombre_usuario, correo, rol }) {
     `UPDATE usuarios
      SET nombre_usuario = COALESCE($1, nombre_usuario),
          correo         = COALESCE($2, correo),
-         rol            = COALESCE($3, rol)
+         rol            = COALESCE($3, rol),
+         -- Si el correo cambia, el nuevo todavía no está verificado
+         correo_verificado = CASE WHEN $2::text IS NOT NULL AND lower($2::text) <> lower(correo)
+                                  THEN FALSE ELSE correo_verificado END,
+         correo_verificado_en = CASE WHEN $2::text IS NOT NULL AND lower($2::text) <> lower(correo)
+                                     THEN NULL ELSE correo_verificado_en END
      WHERE id = $4
      RETURNING ${COLUMNAS}`,
     [nombre_usuario ?? null, correo ?? null, rol ?? null, id]

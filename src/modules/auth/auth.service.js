@@ -5,7 +5,9 @@ const config = require('../../config/env');
 const crypto = require('crypto');
 const repo = require('./auth.repository');
 const { verificarTokenGoogle } = require('./google');
-const { conflict, unauthorized } = require('../../utils/httpError');
+const { enviarCorreo, plantillaCodigo, exigirCorreoConfigurado } = require('../../utils/correo');
+const { revisarDominio } = require('../../utils/dominioCorreo');
+const { HttpError, badRequest, conflict, unauthorized } = require('../../utils/httpError');
 
 const CREDENCIALES_INVALIDAS = 'Correo electrónico o contraseña incorrectos.';
 const SESION_INVALIDA = 'Sesión inválida o expirada. Inicia sesión de nuevo.';
@@ -85,12 +87,25 @@ async function marcarAcceso(id) {
   }
 }
 
+// Registro con correo y contraseña. Antes de crear la cuenta se revisa que el dominio del correo
+// exista y reciba correos; después se envía un código para confirmar que el correo es de la persona.
 async function registrar({ nombre_usuario, correo, password, rol = 'usuario' }) {
   if (await repo.existeCorreo(correo)) {
     throw conflict('El correo electrónico ya se encuentra registrado.');
   }
+  const dominio = await revisarDominio(correo);
+  if (!dominio.valido) throw badRequest(dominio.motivo);
+
   const password_hash = await prepararPassword(password);
-  return repo.crear({ nombre_usuario, correo, password_hash, rol });
+  const usuario = await repo.crear({ nombre_usuario, correo, password_hash, rol });
+
+  // Si el correo no sale, la cuenta igual queda creada: la app permite pedir el código de nuevo
+  try {
+    await enviarCodigo(usuario, TIPO_VERIFICACION);
+  } catch (err) {
+    console.warn(`[auth] No se envió el código de verificación a ${usuario.correo}: ${err.message}`);
+  }
+  return usuario;
 }
 
 async function iniciarSesion({ correo, password }) {
@@ -132,6 +147,7 @@ async function iniciarConGoogle(credential) {
         proveedor: 'google',
         google_id: google.googleId,
         foto_url: google.foto,
+        correoVerificado: true,
       });
       nuevo = true;
     }
@@ -149,7 +165,121 @@ async function cambiarPassword({ usuarioId, actual, nueva }) {
   await repo.actualizarPassword(usuarioId, await prepararPassword(nueva), { debeCambiar: false });
 }
 
+// =====================================================================
+// Códigos por correo: verificar el correo y restablecer la contraseña
+// =====================================================================
+const TIPO_VERIFICACION = 'verificacion';
+const TIPO_RESTABLECER = 'restablecer';
+const MINUTOS_CODIGO = 15;
+const MAX_INTENTOS = 5;          // intentos por código; después hay que pedir otro
+const ESPERA_REENVIO_SEG = 60;   // tiempo mínimo entre un correo y otro
+const MAX_CODIGOS_HORA = 5;      // correos por hora y por tipo para cada cuenta
+const CODIGO_INVALIDO = 'El código no es correcto o ya venció. Revisa tu correo o pide uno nuevo.';
+
+const nuevoCodigo = () => String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+
+// Solo se guarda la huella del código (HMAC con el secreto del servidor), nunca el código
+const huellaCodigo = (usuarioId, tipo, codigo) =>
+  crypto.createHmac('sha256', config.jwtSecret).update(`${usuarioId}:${tipo}:${codigo}`).digest('hex');
+
+const mismaHuella = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+const primerNombre = (nombre) => String(nombre || '').trim().split(/\s+/)[0] || '';
+
+const TEXTOS = {
+  [TIPO_VERIFICACION]: {
+    asunto: 'Tu código para verificar tu correo · Tanextli',
+    titulo: 'Verifica tu correo',
+    mensaje: 'Escribe este código en Tanextli para confirmar que este correo es tuyo. Así podrás recuperar tu cuenta si olvidas tu contraseña.',
+    nota: 'Si tú no creaste una cuenta en Tanextli, ignora este mensaje.',
+  },
+  [TIPO_RESTABLECER]: {
+    asunto: 'Tu código para restablecer tu contraseña · Tanextli',
+    titulo: 'Restablece tu contraseña',
+    mensaje: 'Recibimos una solicitud para cambiar la contraseña de tu cuenta. Escribe este código en Tanextli para elegir una nueva.',
+    nota: 'Si tú no lo pediste, ignora este mensaje: tu contraseña no cambiará.',
+  },
+};
+
+// Crea un código, lo guarda y lo envía. Respeta las esperas para no llenar el correo de nadie.
+async function enviarCodigo(usuario, tipo) {
+  exigirCorreoConfigurado();
+  const segundos = await repo.segundosDesdeUltimoCodigo(usuario.id, tipo);
+  if (segundos !== null && segundos < ESPERA_REENVIO_SEG) {
+    throw new HttpError(429, `Espera ${ESPERA_REENVIO_SEG - segundos} segundos antes de pedir otro código.`);
+  }
+  if ((await repo.contarCodigosRecientes(usuario.id, tipo, 60)) >= MAX_CODIGOS_HORA) {
+    throw new HttpError(429, 'Pediste demasiados códigos. Intenta de nuevo en una hora.');
+  }
+  const codigo = nuevoCodigo();
+  await repo.guardarCodigo({ usuarioId: usuario.id, tipo, codigoHash: huellaCodigo(usuario.id, tipo, codigo), minutos: MINUTOS_CODIGO });
+  const { texto, html } = plantillaCodigo({ nombre: primerNombre(usuario.nombre_usuario), codigo, minutos: MINUTOS_CODIGO, ...TEXTOS[tipo] });
+  await enviarCorreo({ para: usuario.correo, asunto: TEXTOS[tipo].asunto, texto, html });
+}
+
+// Revisa el código; cuenta los intentos fallidos y lo anula al llegar al máximo
+async function comprobarCodigo(usuarioId, tipo, codigo) {
+  const guardado = await repo.codigoVigente(usuarioId, tipo);
+  if (!guardado || guardado.intentos >= MAX_INTENTOS) throw badRequest(CODIGO_INVALIDO);
+  if (!mismaHuella(guardado.codigo_hash.trim(), huellaCodigo(usuarioId, tipo, codigo))) {
+    const intentos = await repo.sumarIntentoCodigo(guardado.id);
+    if (intentos >= MAX_INTENTOS) {
+      await repo.usarCodigo(guardado.id);
+      throw badRequest('Demasiados intentos con este código. Pide uno nuevo.');
+    }
+    throw badRequest(CODIGO_INVALIDO);
+  }
+  await repo.usarCodigo(guardado.id);
+}
+
+// POST /auth/verificacion/enviar (con sesión)
+async function enviarVerificacion(usuarioId) {
+  const usuario = await repo.buscarPorId(usuarioId);
+  if (!usuario) throw unauthorized(SESION_INVALIDA);
+  if (usuario.correo_verificado === true) return { yaVerificado: true, correo: usuario.correo };
+  await enviarCodigo(usuario, TIPO_VERIFICACION);
+  return { yaVerificado: false, correo: usuario.correo };
+}
+
+// POST /auth/verificacion/confirmar { codigo } (con sesión)
+async function confirmarVerificacion(usuarioId, codigo) {
+  const usuario = await repo.buscarPorId(usuarioId);
+  if (!usuario) throw unauthorized(SESION_INVALIDA);
+  if (usuario.correo_verificado === true) return usuario;
+  await comprobarCodigo(usuarioId, TIPO_VERIFICACION, codigo);
+  return repo.marcarCorreoVerificado(usuarioId);
+}
+
+// POST /auth/password/olvide { correo }: siempre responde igual para no revelar qué correos
+// tienen cuenta. Si la cuenta existe, envía el código.
+async function solicitarRestablecimiento(correo) {
+  exigirCorreoConfigurado();
+  const usuario = await repo.buscarPorCorreo(correo);
+  if (!usuario) return;
+  try {
+    await enviarCodigo(usuario, TIPO_RESTABLECER);
+  } catch (err) {
+    // Las esperas entre correos no se informan: la respuesta debe ser igual exista o no la cuenta
+    if (err.status === 429) return;
+    console.warn(`[auth] No se envió el código de restablecimiento a ${usuario.correo}: ${err.message}`);
+    if (err.status === 502 || err.status === 503) throw err;
+  }
+}
+
+// POST /auth/password/restablecer { correo, codigo, password_nueva }: cambia la contraseña,
+// confirma el correo (recibió el código) e inicia sesión
+async function restablecerConCodigo({ correo, codigo, nueva }) {
+  const usuario = await repo.buscarPorCorreo(correo);
+  if (!usuario) throw badRequest(CODIGO_INVALIDO);
+  await comprobarCodigo(usuario.id, TIPO_RESTABLECER, codigo);
+  await repo.actualizarPassword(usuario.id, await prepararPassword(nueva), { debeCambiar: false });
+  const actualizado = await repo.marcarCorreoVerificado(usuario.id);
+  await marcarAcceso(usuario.id);
+  return actualizado;
+}
+
 module.exports = {
   registrar, iniciarSesion, iniciarConGoogle, cambiarPassword, prepararPassword, passwordTemporal,
   crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion, seguirConectado,
+  enviarVerificacion, confirmarVerificacion, solicitarRestablecimiento, restablecerConCodigo,
 };

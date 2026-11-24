@@ -1,4 +1,5 @@
-// POST /registro, POST /login, POST /auth/google, GET /perfil, PUT /perfil/password  (en /api y /api/v1)
+// POST /registro, POST /login, POST /auth/google, GET /perfil, PUT /perfil/password,
+// POST /auth/verificacion/enviar|confirmar, POST /auth/password/olvide|restablecer  (en /api y /api/v1)
 const { Router } = require('express');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const validate = require('../../middlewares/validate');
@@ -39,6 +40,25 @@ const limiteGoogle = rateLimit({
   message: respuestaLimite,
 });
 
+// Códigos por correo: pocos por IP + correo (además del límite por cuenta en el servicio)
+const porIpYCorreo = (req) => `${ipKeyGenerator(req.ip)}|${String(req.body?.correo || req.body?.email || '').trim().toLowerCase()}`;
+const limiteCodigos = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: porIpYCorreo,
+  message: respuestaLimite,
+});
+const limiteConfirmar = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 15,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: porIpYCorreo,
+  message: respuestaLimite,
+});
+
 router.post(
   '/registro',
   limiteRegistro,
@@ -67,6 +87,29 @@ router.put(
   limiteLogin,
   validate(schemas.cambiarPassword, 'body', 'Datos inválidos.'),
   asyncHandler(controller.cambiarPassword)
+);
+
+router.post('/auth/verificacion/enviar', limiteCodigos, asyncHandler(controller.enviarVerificacion));
+
+router.post(
+  '/auth/verificacion/confirmar',
+  limiteConfirmar,
+  validate(schemas.confirmarCorreo, 'body', 'Escribe el código de 6 números.'),
+  asyncHandler(controller.confirmarVerificacion)
+);
+
+router.post(
+  '/auth/password/olvide',
+  limiteCodigos,
+  validate(schemas.olvidePassword, 'body', 'Escribe tu correo electrónico.'),
+  asyncHandler(controller.olvidePassword)
+);
+
+router.post(
+  '/auth/password/restablecer',
+  limiteConfirmar,
+  validate(schemas.restablecerPassword, 'body', 'Revisa el código y la nueva contraseña.'),
+  asyncHandler(controller.restablecerPassword)
 );
 
 module.exports = router;

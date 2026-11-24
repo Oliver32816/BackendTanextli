@@ -84,6 +84,8 @@ categorias 1─N categorias (categoria_padre_id)
 | `init.sql` | Estructura final (tablas vacías) | Docker, solo con el volumen vacío |
 | `db/migrations/002_contenido_nahuatl.sql` | Categorías y palabras en español y náhuatl (de `contenido.json`, con id fijos) | Docker en instalación nueva; a mano en producción |
 | `db/migrations/003_progreso_usuarios.sql` | Progreso por lección, resultados de actividades, puntajes, bcrypt, correo sin mayúsculas | Igual que 002 |
+| `db/migrations/004_cuentas.sql` | Google, contraseña temporal y último acceso | Igual que 002 |
+| `db/migrations/005_verificacion_correo.sql` | Verificación de correo y códigos por correo (restablecer contraseña) | Igual que 002 |
 | `db/legacy/init_original.sql` | El init.sql original (lo usa el generador para respetar los id) | Nunca |
 
 Las migraciones se pueden ejecutar varias veces y no borran datos. En producción:
@@ -132,4 +134,22 @@ página **Administración** de la app web. No hay rutas para modificar nada desd
 
 El último acceso se actualiza al iniciar sesión y, como máximo una vez por minuto, en cada petición
 con sesión (`/perfil` y progreso), para saber quién está **en línea**.
+
+## Correos: verificar el correo y restablecer la contraseña
+
+Al registrarse con correo y contraseña se revisa que el dominio del correo reciba correos (DNS/MX)
+y se envía un código de 6 números. La app web pide ese código antes de entrar. Las cuentas de
+Google quedan verificadas solas. Si alguien olvida su contraseña, pide un código a su correo y
+elige una nueva.
+
+| Ruta (en `/api`) | Uso |
+|---|---|
+| `POST /auth/verificacion/enviar` (token) | Envía un código al correo de la cuenta |
+| `POST /auth/verificacion/confirmar` (token) `{ codigo }` | Confirma el correo |
+| `POST /auth/password/olvide` `{ correo }` | Envía un código para restablecer (misma respuesta exista o no la cuenta) |
+| `POST /auth/password/restablecer` `{ correo, codigo, password_nueva }` | Cambia la contraseña e inicia sesión |
+
+Los códigos vencen a los 15 minutos, aceptan 5 intentos, se guardan solo como huella HMAC y hay
+un minuto de espera entre correos (máximo 5 por hora). Configuración en `.env`: `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (contraseña de aplicación de Gmail), `CORREO_REMITENTE`, `APP_URL`.
 

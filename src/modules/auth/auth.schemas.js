@@ -13,9 +13,13 @@ const conAlias = (esquema) => z.preprocess((cuerpo) => {
   };
 }, esquema);
 
+// Correo con formato real (usuario@dominio.ext); se guarda en minúsculas
+const correoValido = z.string().trim().toLowerCase().max(254)
+  .regex(/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i, 'Escribe un correo electrónico válido (por ejemplo, nombre@gmail.com).');
+
 const registro = conAlias(z.object({
   nombre_usuario: z.string().trim().min(1).max(80),
-  correo: z.string().trim().min(3).max(254),
+  correo: correoValido,
   password: z.string().min(1).max(72),
 }));
 
@@ -40,4 +44,26 @@ const cambiarPassword = z.preprocess((cuerpo) => {
   nueva: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.').max(72),
 }).refine((d) => d.actual !== d.nueva, { message: 'La nueva contraseña debe ser distinta de la actual.', path: ['nueva'] }));
 
-module.exports = { registro, login, google, cambiarPassword };
+const codigo = z.preprocess(
+  (v) => (typeof v === 'string' ? v.replace(/\s+/g, '') : v),
+  z.string().regex(/^\d{6}$/, 'El código tiene 6 números.')
+);
+
+const confirmarCorreo = z.object({ codigo });
+
+const olvidePassword = conAlias(z.object({ correo: z.string().trim().min(3).max(254) }));
+
+const restablecerPassword = z.preprocess((cuerpo) => {
+  if (!cuerpo || typeof cuerpo !== 'object') return cuerpo;
+  return {
+    correo: cuerpo.correo ?? cuerpo.email,
+    codigo: cuerpo.codigo,
+    nueva: cuerpo.password_nueva ?? cuerpo.nueva ?? cuerpo.password,
+  };
+}, z.object({
+  correo: z.string().trim().min(3).max(254),
+  codigo,
+  nueva: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.').max(72),
+}));
+
+module.exports = { registro, login, google, cambiarPassword, confirmarCorreo, olvidePassword, restablecerPassword };

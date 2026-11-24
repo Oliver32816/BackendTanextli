@@ -44,6 +44,21 @@ module.exports = Object.freeze({
   // Vacío = el inicio con Google queda desactivado.
   googleClientIds: lista(process.env.GOOGLE_CLIENT_IDS),
 
+  // Envío de correos (códigos para verificar el correo y restablecer la contraseña).
+  // Con Gmail: SMTP_USER = la cuenta y SMTP_PASS = una "contraseña de aplicación" de 16 letras.
+  // Sin SMTP_USER/SMTP_PASS: en desarrollo los códigos se muestran en la consola; en producción
+  // esas funciones responden "no configurado" (el resto de la API sigue igual).
+  correo: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(process.env.SMTP_PORT) || 465,
+    usuario: process.env.SMTP_USER || '',
+    password: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
+    remitente: process.env.CORREO_REMITENTE || process.env.SMTP_USER || '',
+  },
+
+  // Dirección de la app web (aparece en los correos)
+  appUrl: (process.env.APP_URL || 'https://olo.tail0de9ec.ts.net:8443').replace(/\/+$/, ''),
+
   // URL pública (Funnel). Se usa para armar URLs absolutas de imágenes sin confiar
   // en la cabecera Host que manda el cliente.
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'https://olo.tail0de9ec.ts.net').replace(/\/+$/, ''),

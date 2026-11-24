@@ -6,6 +6,7 @@
 --   002_contenido_nahuatl.sql   categorías y palabras en español y náhuatl
 --   003_progreso_usuarios.sql   progreso (ya incluido aquí; en una base nueva no cambia nada)
 --   004_cuentas.sql             Google y contraseña temporal (ya incluido aquí)
+--   005_verificacion_correo.sql verificación de correo y códigos por correo (ya incluido aquí)
 --
 -- Relaciones:
 --   usuarios 1─N progreso_usuarios N─1 palabras N─1 categorias (subcategoría = lección)
@@ -27,10 +28,27 @@ CREATE TABLE IF NOT EXISTS usuarios (
     foto_url       VARCHAR(500),
     debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE, -- tras un restablecimiento
     ultimo_acceso  TIMESTAMP,
+    correo_verificado    BOOLEAN DEFAULT FALSE,      -- NULL = cuenta anterior a la verificación
+    correo_verificado_en TIMESTAMP,
     CONSTRAINT chk_usuarios_proveedor CHECK (proveedor IN ('local', 'google'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_correo_lower ON usuarios (lower(correo));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_google_id ON usuarios (google_id) WHERE google_id IS NOT NULL;
+
+-- Códigos de 6 dígitos enviados por correo (verificar correo / restablecer contraseña).
+-- Solo se guarda su huella HMAC, nunca el código.
+CREATE TABLE IF NOT EXISTS codigos_correo (
+    id          SERIAL PRIMARY KEY,
+    usuario_id  INT          NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    tipo        VARCHAR(20)  NOT NULL,
+    codigo_hash CHAR(64)     NOT NULL,
+    intentos    SMALLINT     NOT NULL DEFAULT 0,
+    expira_en   TIMESTAMP    NOT NULL,
+    usado_en    TIMESTAMP,
+    creado_en   TIMESTAMP    NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_codigos_correo_tipo CHECK (tipo IN ('verificacion', 'restablecer'))
+);
+CREATE INDEX IF NOT EXISTS ix_codigos_correo_usuario ON codigos_correo (usuario_id, tipo, creado_en DESC);
 
 -- 2. Categorías y subcategorías ---------------------------------------------------
 -- Principal: categoria_padre_id NULL (Familia, Colores…). Subcategoría: la lección (Familia principal…).

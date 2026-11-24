@@ -42,4 +42,44 @@ async function cambiarPassword(req, res) {
   res.json({ estado: 'EXITO', mensaje: 'Contraseña actualizada correctamente.' });
 }
 
-module.exports = { registro, login, perfil, google, cambiarPassword };
+// POST /auth/verificacion/enviar (con token): envía un código al correo de la cuenta
+async function enviarVerificacion(req, res) {
+  const token = service.tokenDeLaPeticion(req);
+  if (!token) throw unauthorized('Falta el token de sesión.');
+  const { id } = service.datosDelToken(token);
+  const { yaVerificado, correo } = await service.enviarVerificacion(id);
+  res.json({
+    estado: 'EXITO',
+    mensaje: yaVerificado ? 'Tu correo ya está verificado.' : `Te enviamos un código a ${correo}.`,
+    ya_verificado: yaVerificado,
+  });
+}
+
+// POST /auth/verificacion/confirmar { codigo } (con token)
+async function confirmarVerificacion(req, res) {
+  const token = service.tokenDeLaPeticion(req);
+  if (!token) throw unauthorized('Falta el token de sesión.');
+  const { id } = service.datosDelToken(token);
+  const usuario = await service.confirmarVerificacion(id, req.validated.body.codigo);
+  res.json({ estado: 'EXITO', mensaje: '¡Correo verificado!', usuario });
+}
+
+// POST /auth/password/olvide { correo }: la respuesta es la misma aunque el correo no exista
+async function olvidePassword(req, res) {
+  await service.solicitarRestablecimiento(req.validated.body.correo);
+  res.json({
+    estado: 'EXITO',
+    mensaje: 'Si el correo tiene una cuenta en Tanextli, te enviamos un código para restablecer tu contraseña.',
+  });
+}
+
+// POST /auth/password/restablecer { correo, codigo, password_nueva }: cambia la contraseña e inicia sesión
+async function restablecerPassword(req, res) {
+  const usuario = await service.restablecerConCodigo(req.validated.body);
+  res.json({ estado: 'EXITO', mensaje: 'Contraseña actualizada correctamente.', usuario, token: service.crearToken(usuario) });
+}
+
+module.exports = {
+  registro, login, perfil, google, cambiarPassword,
+  enviarVerificacion, confirmarVerificacion, olvidePassword, restablecerPassword,
+};
