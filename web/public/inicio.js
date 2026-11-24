@@ -31,7 +31,9 @@ const ENDPOINTS = [
   ['Cuenta', [
     ['POST', '/api/registro', 'Crea una cuenta (nombre_usuario, correo, password)'],
     ['POST', '/api/login', 'Inicia sesión (correo, password); devuelve el usuario y un token'],
+    ['POST', '/api/auth/google', 'Continuar con Google (credential): crea la cuenta o inicia sesión; devuelve token'],
     ['GET', '/api/perfil', 'Usuario de la sesión (Authorization: Bearer <token>)'],
+    ['PUT', '/api/perfil/password', 'Cambia la contraseña (password_actual, password_nueva) con token'],
   ]],
   ['Progreso (id del usuario o "yo" con su token)', [
     ['GET', '/api/progreso/1/categorias', 'Avance de cada categoría: porcentaje y siguiente lección'],

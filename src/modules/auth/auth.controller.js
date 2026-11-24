@@ -21,4 +21,25 @@ async function perfil(req, res) {
   res.json({ estado: 'EXITO', usuario });
 }
 
-module.exports = { registro, login, perfil };
+// POST /auth/google { credential }: "Continuar con Google" (registra la cuenta si no existe)
+async function google(req, res) {
+  const { usuario, nuevo } = await service.iniciarConGoogle(req.validated.body.credential);
+  res.status(nuevo ? 201 : 200).json({
+    estado: 'EXITO',
+    mensaje: nuevo ? 'Cuenta creada con Google.' : 'Inicio de sesión exitoso.',
+    nuevo,
+    usuario,
+    token: service.crearToken(usuario),
+  });
+}
+
+// PUT /perfil/password { password_actual, password_nueva } con token
+async function cambiarPassword(req, res) {
+  const token = service.tokenDeLaPeticion(req);
+  if (!token) throw unauthorized('Falta el token de sesión.');
+  const { id } = service.datosDelToken(token);
+  await service.cambiarPassword({ usuarioId: id, ...req.validated.body });
+  res.json({ estado: 'EXITO', mensaje: 'Contraseña actualizada correctamente.' });
+}
+
+module.exports = { registro, login, perfil, google, cambiarPassword };

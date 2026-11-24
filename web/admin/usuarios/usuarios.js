@@ -1,6 +1,7 @@
-// Usuarios (solo lectura): indicadores, búsqueda y filtro por rol.
+// Usuarios: indicadores, búsqueda, filtro por rol y acciones (editar, rol, contraseña, eliminar).
 import { el, contarHasta, normalizar, fecha, iniciales, retrasar } from '/portal/assets/js/ui.js';
 import { admin } from '/portal/assets/js/api.js';
+import { accionesDeUsuario, ultimoAcceso } from '/admin/compartido/acciones-usuario.js';
 
 const filas = document.getElementById('filas');
 const buscador = document.getElementById('buscar');
@@ -23,17 +24,23 @@ function pintarKpis() {
 }
 
 function fila(u, i) {
+  const acceso = ultimoAcceso(u.ultimo_acceso);
   const tr = el('tr', {}, [
     el('td', {}, [el('div', { class: 'persona' }, [
       el('span', { class: 'avatar', 'aria-hidden': 'true', text: iniciales(u.nombre_usuario) }),
       el('div', {}, [el('strong', { text: u.nombre_usuario || 'Sin nombre' }), el('small', { text: u.correo })]),
     ])]),
-    el('td', {}, [el('span', { class: `insignia-rol rol-${u.rol}`, text: u.rol })]),
+    el('td', {}, [
+      el('span', { class: `insignia-rol rol-${u.rol}`, text: u.rol }),
+      u.con_google ? el('span', { class: 'etiqueta-google', title: 'Entra con Google', text: 'Google' }) : null,
+      u.debe_cambiar_password ? el('span', { class: 'etiqueta-temporal', title: 'Debe cambiar su contraseña temporal', text: 'Temporal' }) : null,
+    ]),
     el('td', { text: fecha(u.creado_en) }),
     el('td', {}, [el('span', {
-      class: 'estado-conexion', text: 'Sin datos',
-      title: 'El estado conectado/desconectado llega con el inicio de sesión seguro (fase 3).',
+      class: `estado-conexion ${acceso.activo ? 'activo' : ''}`, text: acceso.texto,
+      title: u.ultimo_acceso ? `Último inicio de sesión: ${fecha(u.ultimo_acceso)}` : 'Aún no inicia sesión desde que se registra el acceso',
     })]),
+    el('td', {}, [accionesDeUsuario(u, iniciar)]),
   ]);
   tr.style.animationDelay = `${Math.min(i, 15) * 30}ms`;
   return tr;
@@ -46,7 +53,7 @@ function pintar() {
   contador.textContent = `${visibles.length} de ${usuarios.length}`;
   filas.replaceChildren(...(visibles.length
     ? visibles.map(fila)
-    : [el('tr', {}, [el('td', { colspan: '4', class: 'vacio', text: 'No hay usuarios que coincidan.' })])]));
+    : [el('tr', {}, [el('td', { colspan: '5', class: 'vacio', text: 'No hay usuarios que coincidan.' })])]));
 }
 
 function pintarChips() {
@@ -69,7 +76,7 @@ async function iniciar() {
     pintarChips();
     pintar();
   } catch (err) {
-    filas.replaceChildren(el('tr', {}, [el('td', { colspan: '4', class: 'vacio', text: `No se pudo cargar la lista: ${err.message}` })]));
+    filas.replaceChildren(el('tr', {}, [el('td', { colspan: '5', class: 'vacio', text: `No se pudo cargar la lista: ${err.message}` })]));
   }
 }
 

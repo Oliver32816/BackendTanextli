@@ -24,6 +24,19 @@ router.put(
   asyncHandler(controller.actualizar)
 );
 
+router.put(
+  '/admin/usuarios/:id/rol',
+  validate(schemas.idParam, 'params', 'ID inválido.'),
+  validate(schemas.rol, 'body', 'Rol inválido: usuario, admin o superuser.'),
+  asyncHandler(controller.cambiarRol)
+);
+
+router.post(
+  '/admin/usuarios/:id/restablecer-password',
+  validate(schemas.idParam, 'params', 'ID inválido.'),
+  asyncHandler(controller.restablecerPassword)
+);
+
 router.delete(
   '/admin/usuarios/:id',
   validate(schemas.idParam, 'params', 'ID inválido.'),

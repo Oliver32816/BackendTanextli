@@ -5,6 +5,7 @@
 -- vacío, seguido de:
 --   002_contenido_nahuatl.sql   categorías y palabras en español y náhuatl
 --   003_progreso_usuarios.sql   progreso (ya incluido aquí; en una base nueva no cambia nada)
+--   004_cuentas.sql             Google y contraseña temporal (ya incluido aquí)
 --
 -- Relaciones:
 --   usuarios 1─N progreso_usuarios N─1 palabras N─1 categorias (subcategoría = lección)
@@ -20,9 +21,16 @@ CREATE TABLE IF NOT EXISTS usuarios (
     correo         VARCHAR(254) NOT NULL UNIQUE,
     password_hash  VARCHAR(100) NOT NULL,              -- bcrypt
     rol            VARCHAR(10)  DEFAULT 'usuario' CHECK (rol IN ('usuario', 'admin', 'superuser')),
-    creado_en      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+    creado_en      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    proveedor      VARCHAR(20)  NOT NULL DEFAULT 'local', -- 'local' o 'google'
+    google_id      VARCHAR(64),
+    foto_url       VARCHAR(500),
+    debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE, -- tras un restablecimiento
+    ultimo_acceso  TIMESTAMP,
+    CONSTRAINT chk_usuarios_proveedor CHECK (proveedor IN ('local', 'google'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_correo_lower ON usuarios (lower(correo));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_google_id ON usuarios (google_id) WHERE google_id IS NOT NULL;
 
 -- 2. Categorías y subcategorías ---------------------------------------------------
 -- Principal: categoria_padre_id NULL (Familia, Colores…). Subcategoría: la lección (Familia principal…).

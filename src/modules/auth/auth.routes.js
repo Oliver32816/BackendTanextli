@@ -1,4 +1,4 @@
-// POST /registro, POST /login, GET /perfil  (montadas en /api y /api/v1)
+// POST /registro, POST /login, POST /auth/google, GET /perfil, PUT /perfil/password  (en /api y /api/v1)
 const { Router } = require('express');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const validate = require('../../middlewares/validate');
@@ -30,6 +30,15 @@ const limiteRegistro = rateLimit({
   message: respuestaLimite,
 });
 
+// Google ya protege contra fuerza bruta; el límite es por IP y amplio (un salón comparte IP)
+const limiteGoogle = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: respuestaLimite,
+});
+
 router.post(
   '/registro',
   limiteRegistro,
@@ -44,6 +53,20 @@ router.post(
   asyncHandler(controller.login)
 );
 
+router.post(
+  '/auth/google',
+  limiteGoogle,
+  validate(schemas.google, 'body', 'Falta el token de Google (credential).'),
+  asyncHandler(controller.google)
+);
+
 router.get('/perfil', asyncHandler(controller.perfil));
+
+router.put(
+  '/perfil/password',
+  limiteLogin,
+  validate(schemas.cambiarPassword, 'body', 'Datos inválidos.'),
+  asyncHandler(controller.cambiarPassword)
+);
 
 module.exports = router;

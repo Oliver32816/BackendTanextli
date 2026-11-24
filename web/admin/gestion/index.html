@@ -28,16 +28,16 @@
           <h2>Registrar usuario</h2>
           <div class="grupo">
             <label class="etiqueta" for="r-nombre">Nombre de usuario</label>
-            <input class="campo" id="r-nombre" name="nombre_usuario" maxlength="50" required autocomplete="off">
+            <input class="campo" id="r-nombre" name="nombre_usuario" maxlength="80" required autocomplete="off">
           </div>
           <div class="grupo">
             <label class="etiqueta" for="r-correo">Correo electrónico</label>
-            <input class="campo" id="r-correo" name="correo" type="email" maxlength="50" required autocomplete="off">
+            <input class="campo" id="r-correo" name="correo" type="email" maxlength="254" required autocomplete="off">
           </div>
           <div class="grupo">
             <label class="etiqueta" for="r-password">Contraseña inicial</label>
             <div class="fila-campo">
-              <input class="campo mono" id="r-password" name="password" type="password" minlength="8" maxlength="50" required autocomplete="new-password">
+              <input class="campo mono" id="r-password" name="password" type="password" minlength="8" maxlength="72" required autocomplete="new-password">
               <button class="boton-icono" type="button" id="ver-password" aria-label="Mostrar contraseña"><span data-icono="candado"></span></button>
               <button class="boton-icono" type="button" id="generar-password" aria-label="Generar contraseña segura"><span data-icono="dado"></span></button>
             </div>
@@ -60,7 +60,7 @@
           <h2>Buenas prácticas</h2>
           <ul class="prosa">
             <li>Asigna <strong>admin</strong> o <strong>superusuario</strong> solo a quien lo necesite.</li>
-            <li>Las contraseñas no se pueden ver: se guardarán cifradas. Si alguien la olvida, usa <strong>Restablecer</strong> (disponible en la fase 3) para generar una temporal.</li>
+            <li>Las contraseñas no se pueden ver: se guardan cifradas. Si alguien la olvida, usa <strong>Restablecer</strong> (botón de llave) para generar una temporal; se le pedirá cambiarla al entrar.</li>
             <li>Eliminar una cuenta borra también su progreso. Esta acción no se puede deshacer.</li>
             <li>Este panel solo existe dentro de la red privada de Tailscale para las personas autorizadas.</li>
           </ul>
@@ -89,45 +89,5 @@
     </div>
   </main>
 
-  <div class="modal" id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="titulo-editar" aria-hidden="true">
-    <form class="caja" id="form-editar" novalidate>
-      <h3 id="titulo-editar">Editar usuario</h3>
-      <div class="grupo">
-        <label class="etiqueta" for="e-nombre">Nombre de usuario</label>
-        <input class="campo" id="e-nombre" maxlength="50" required>
-      </div>
-      <div class="grupo">
-        <label class="etiqueta" for="e-correo">Correo electrónico</label>
-        <input class="campo" id="e-correo" type="email" maxlength="50" required>
-      </div>
-      <div class="grupo">
-        <label class="etiqueta" for="e-rol">Rol</label>
-        <select class="campo" id="e-rol">
-          <option value="usuario">Estudiante (usuario)</option>
-          <option value="admin">Administrador</option>
-          <option value="superuser">Superusuario</option>
-        </select>
-      </div>
-      <div class="pie-modal">
-        <button class="boton boton-secundario" type="button" data-cerrar>Cancelar</button>
-        <button class="boton" type="submit"><span data-icono="check"></span>Guardar cambios</button>
-      </div>
-    </form>
-  </div>
-
-  <div class="modal" id="modal-eliminar" role="alertdialog" aria-modal="true" aria-labelledby="titulo-eliminar" aria-hidden="true">
-    <form class="caja" id="form-eliminar" novalidate>
-      <h3 id="titulo-eliminar">Eliminar cuenta</h3>
-      <p>Se borrará la cuenta de <strong id="eliminar-nombre"></strong> y todo su progreso. <strong>No se puede deshacer.</strong></p>
-      <div class="grupo">
-        <label class="etiqueta" for="eliminar-confirmacion">Para confirmar, escribe el correo: <code id="eliminar-correo"></code></label>
-        <input class="campo" id="eliminar-confirmacion" autocomplete="off">
-      </div>
-      <div class="pie-modal">
-        <button class="boton boton-secundario" type="button" data-cerrar>Cancelar</button>
-        <button class="boton boton-peligro" type="submit" id="confirmar-eliminar" disabled><span data-icono="basura"></span>Eliminar definitivamente</button>
-      </div>
-    </form>
-  </div>
 </body>
 </html>

@@ -18,4 +18,6 @@ const actualizar = z.object({
   rol: z.enum(ROLES).optional(),
 });
 
-module.exports = { ROLES, idParam, crear, actualizar };
+const rol = z.object({ rol: z.enum(ROLES) });
+
+module.exports = { ROLES, idParam, crear, actualizar, rol };

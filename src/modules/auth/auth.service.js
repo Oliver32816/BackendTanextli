@@ -2,7 +2,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../../config/env');
+const crypto = require('crypto');
 const repo = require('./auth.repository');
+const { verificarTokenGoogle } = require('./google');
 const { conflict, unauthorized } = require('../../utils/httpError');
 
 const CREDENCIALES_INVALIDAS = 'Correo electrónico o contraseña incorrectos.';
@@ -58,8 +60,23 @@ async function passwordCoincide(password, guardado) {
 }
 
 function sinPassword(usuario) {
-  const { password_hash, ...publico } = usuario; // eslint-disable-line no-unused-vars
+  const { password_hash, google_id, ...publico } = usuario; // eslint-disable-line no-unused-vars
   return publico;
+}
+
+// Contraseña aleatoria legible (sin 0/O, 1/l/I) para restablecimientos
+function passwordTemporal(longitud = 12) {
+  const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  return Array.from(crypto.randomBytes(longitud), (b) => alfabeto[b % alfabeto.length]).join('');
+}
+
+// Último acceso para el panel; si falla, el inicio de sesión sigue
+async function marcarAcceso(id) {
+  try {
+    await repo.registrarAcceso(id);
+  } catch (err) {
+    console.warn(`[auth] No se pudo registrar el acceso del usuario ${id}: ${err.message}`);
+  }
 }
 
 async function registrar({ nombre_usuario, correo, password, rol = 'usuario' }) {
@@ -83,7 +100,50 @@ async function iniciarSesion({ correo, password }) {
       console.warn(`[auth] No se pudo convertir la contraseña del usuario ${usuario.id}: ${err.message}`);
     }
   }
+  await marcarAcceso(usuario.id);
   return sinPassword(usuario);
 }
 
-module.exports = { registrar, iniciarSesion, prepararPassword, crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion };
+// "Continuar con Google": entra si la cuenta existe (por Google o por correo) o la crea al momento
+async function iniciarConGoogle(credential) {
+  const google = await verificarTokenGoogle(credential);
+  let usuario = await repo.buscarPorGoogleId(google.googleId);
+  let nuevo = false;
+  if (!usuario) {
+    const porCorreo = await repo.buscarPorCorreo(google.correo);
+    if (porCorreo) {
+      if (porCorreo.google_id && porCorreo.google_id !== google.googleId) {
+        throw conflict('Ese correo ya está vinculado a otra cuenta de Google.');
+      }
+      usuario = await repo.vincularGoogle(porCorreo.id, google.googleId, google.foto);
+    } else {
+      // Contraseña aleatoria que nadie conoce: la cuenta entra con Google (puede pedir un
+      // restablecimiento al admin si algún día quiere entrar con correo y contraseña)
+      usuario = await repo.crear({
+        nombre_usuario: google.nombre,
+        correo: google.correo,
+        password_hash: await prepararPassword(crypto.randomBytes(32).toString('hex')),
+        proveedor: 'google',
+        google_id: google.googleId,
+        foto_url: google.foto,
+      });
+      nuevo = true;
+    }
+  }
+  await marcarAcceso(usuario.id);
+  return { usuario: sinPassword(usuario), nuevo };
+}
+
+// El propio usuario cambia su contraseña (por ejemplo, después de un restablecimiento)
+async function cambiarPassword({ usuarioId, actual, nueva }) {
+  const guardado = await repo.passwordDe(usuarioId);
+  if (!guardado || !(await passwordCoincide(actual, guardado))) {
+    throw unauthorized('La contraseña actual no es correcta.');
+  }
+  await repo.actualizarPassword(usuarioId, await prepararPassword(nueva), { debeCambiar: false });
+}
+
+module.exports = {
+  registrar, iniciarSesion, iniciarConGoogle, cambiarPassword, prepararPassword, passwordTemporal,
+  crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion,
+};

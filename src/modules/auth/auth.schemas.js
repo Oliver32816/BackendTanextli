@@ -24,4 +24,20 @@ const login = conAlias(z.object({
   password: z.string().min(1).max(200),
 }));
 
-module.exports = { registro, login };
+const google = z.preprocess((cuerpo) => {
+  if (!cuerpo || typeof cuerpo !== 'object') return cuerpo;
+  return { credential: cuerpo.credential ?? cuerpo.id_token ?? cuerpo.idToken };
+}, z.object({ credential: z.string().min(20).max(4096) }));
+
+const cambiarPassword = z.preprocess((cuerpo) => {
+  if (!cuerpo || typeof cuerpo !== 'object') return cuerpo;
+  return {
+    actual: cuerpo.password_actual ?? cuerpo.actual,
+    nueva: cuerpo.password_nueva ?? cuerpo.nueva,
+  };
+}, z.object({
+  actual: z.string().min(1).max(200),
+  nueva: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.').max(72),
+}).refine((d) => d.actual !== d.nueva, { message: 'La nueva contraseña debe ser distinta de la actual.', path: ['nueva'] }));
+
+module.exports = { registro, login, google, cambiarPassword };

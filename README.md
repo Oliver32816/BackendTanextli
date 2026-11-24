@@ -42,7 +42,9 @@ palabras; se guarda todo en una transacción y responde el nuevo porcentaje y la
 |---|---|---|
 | POST | `/api/registro` | Crear cuenta: `nombre_usuario`, `correo`, `password` |
 | POST | `/api/login` | `correo` (o `email`), `password` (o `contrasena`) → `{ estado, mensaje, usuario, token }` |
+| POST | `/api/auth/google` | "Continuar con Google": `credential` (ID token de Google). Crea la cuenta (201) o inicia sesión (200); si ya existía una cuenta con ese correo la vincula → `{ nuevo, usuario, token }` |
 | GET | `/api/perfil` | Usuario de la sesión. Cabecera `Authorization: Bearer <token>` (dura 7 días) |
+| PUT | `/api/perfil/password` | Con token: `password_actual`, `password_nueva` (mín. 8). Quita el aviso `debe_cambiar_password` |
 | GET | `/api/progreso/:usuario/categorias` | Avance de cada categoría: lecciones completadas/total, `porcentaje`, `siguiente_leccion` |
 | GET | `/api/progreso/:usuario/categorias/:categoria` | Lecciones de una categoría con `estado` (`completada`, `disponible`, `bloqueada`), puntajes y `actividades` (`{ escritura: { aciertos, total } }`) |
 | GET | `/api/progreso/:usuario/lecciones` | Lecciones completadas `{ progreso: { familia: [1, 2], frases: [3] }, lecciones: [...] }` |
@@ -56,6 +58,15 @@ palabras; se guarda todo en una transacción y responde el nuevo porcentaje y la
 | GET | `/api/usuarios` · `/api/progreso` (sin id) | **Solo equipo**: dispositivos de la red Tailscale |
 
 Archivos: `/audios/...`, `/media/...` y `/multimedia/AudiosTanextli/...` (misma carpeta).
+Panel admin (solo tailnet, también bajo `/api` del puerto 9443): `GET/POST /api/admin/usuarios`,
+`PUT/DELETE /api/admin/usuarios/:id`, `PUT /api/admin/usuarios/:id/rol` (`{ rol }`) y
+`POST /api/admin/usuarios/:id/restablecer-password` (devuelve una `password_temporal` una sola vez; al
+entrar con ella el login trae `debe_cambiar_password: true` y la app debe pedir una nueva). Nunca se
+puede quitar ni borrar al último superusuario.
+
+**Google:** crea un ID de cliente OAuth "Aplicación web" en Google Cloud y ponlo en
+`GOOGLE_CLIENT_IDS` (separa con comas si agregas el de Android). Vacío = Google desactivado (503).
+
 Panel admin: `https://olo.tail0de9ec.ts.net:9443/admin/` (solo tailnet). El botón "Usuarios" del
 portal lleva ahí a los dispositivos de la tailnet; desde internet muestra "No tienes acceso".
 

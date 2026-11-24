@@ -40,6 +40,10 @@ module.exports = Object.freeze({
 
   jwtSecret: process.env.JWT_SECRET,
 
+  // "Continuar con Google": ID(s) de cliente OAuth de Google Cloud (web y, si aplica, Android/iOS).
+  // Vacío = el inicio con Google queda desactivado.
+  googleClientIds: lista(process.env.GOOGLE_CLIENT_IDS),
+
   // URL pública (Funnel). Se usa para armar URLs absolutas de imágenes sin confiar
   // en la cabecera Host que manda el cliente.
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'https://olo.tail0de9ec.ts.net').replace(/\/+$/, ''),
