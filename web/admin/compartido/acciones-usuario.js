@@ -200,11 +200,14 @@ export function accionesDeUsuario(u, recargar) {
   ]);
 }
 
-// "Hace 5 min" / "Nunca"; activo si entró en los últimos 15 minutos
+// "Hace 5 min" / "Nunca"; "Ahora" (activo) si la app mandó señal en los últimos 3 minutos
+// (la app abierta avisa cada minuto con POST /auth/latido)
+const EN_LINEA_MIN = 3;
 export function ultimoAcceso(fechaIso) {
   if (!fechaIso) return { texto: 'Nunca', activo: false };
   const minutos = Math.max(0, Math.round((Date.now() - new Date(fechaIso).getTime()) / 60000));
-  const texto = minutos < 1 ? 'Ahora' : minutos < 60 ? `Hace ${minutos} min`
+  const activo = minutos < EN_LINEA_MIN;
+  const texto = activo ? 'Ahora' : minutos < 60 ? `Hace ${minutos} min`
     : minutos < 1440 ? `Hace ${Math.round(minutos / 60)} h` : `Hace ${Math.round(minutos / 1440)} d`;
-  return { texto, activo: minutos <= 15 };
+  return { texto, activo };
 }

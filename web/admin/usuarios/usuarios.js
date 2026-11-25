@@ -80,5 +80,20 @@ async function iniciar() {
   }
 }
 
+// Cada minuto vuelve a pedir la lista (sin animaciones) para que "Ahora" / "Hace X min" esté al día.
+// Se salta si la pestaña está oculta o hay una ventana de acción abierta.
+async function refrescar() {
+  if (document.hidden || document.querySelector('.modal[aria-hidden="false"]')) return;
+  try {
+    const datos = await admin('/api/admin/usuarios');
+    usuarios = datos.usuarios || usuarios;
+    pintar();
+  } catch {
+    // sin conexión: se intenta en el siguiente minuto
+  }
+}
+
 buscador.addEventListener('input', retrasar(pintar, 150));
 iniciar();
+setInterval(refrescar, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refrescar(); });

@@ -21,6 +21,14 @@ async function perfil(req, res) {
   res.json({ estado: 'EXITO', usuario });
 }
 
+// POST /auth/latido con token: la app avisa cada minuto que sigue abierta (para "En línea ahora")
+async function latido(req, res) {
+  const token = service.tokenDeLaPeticion(req);
+  if (!token) throw unauthorized('Falta el token de sesión.');
+  await service.usuarioDelToken(token); // valida la sesión y actualiza ultimo_acceso
+  res.status(204).end();
+}
+
 // POST /auth/google { credential }: "Continuar con Google" (registra la cuenta si no existe)
 async function google(req, res) {
   const { usuario, nuevo } = await service.iniciarConGoogle(req.validated.body.credential);
@@ -80,6 +88,6 @@ async function restablecerPassword(req, res) {
 }
 
 module.exports = {
-  registro, login, perfil, google, cambiarPassword,
+  registro, login, perfil, latido, google, cambiarPassword,
   enviarVerificacion, confirmarVerificacion, olvidePassword, restablecerPassword,
 };

@@ -42,6 +42,17 @@ const limiteGoogle = rateLimit({
 
 // Códigos por correo: pocos por IP + correo (además del límite por cuenta en el servicio)
 const porIpYCorreo = (req) => `${ipKeyGenerator(req.ip)}|${String(req.body?.correo || req.body?.email || '').trim().toLowerCase()}`;
+// Latido: la app lo manda 1 vez por minuto; el límite deja margen para varias pestañas.
+// Se cuenta por sesión (token) y no por IP, porque el proxy puede reportar la misma IP para todos.
+const limiteLatido = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 12,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req) => `latido|${req.get('Authorization') || ipKeyGenerator(req.ip)}`,
+  message: respuestaLimite,
+});
+
 const limiteCodigos = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 8,
@@ -81,6 +92,8 @@ router.post(
 );
 
 router.get('/perfil', asyncHandler(controller.perfil));
+
+router.post('/auth/latido', limiteLatido, asyncHandler(controller.latido));
 
 router.put(
   '/perfil/password',

@@ -72,7 +72,7 @@ async function registrarAcceso(id) {
 async function tocarAcceso(id) {
   await db.query(
     `UPDATE usuarios SET ultimo_acceso = NOW()
-     WHERE id = $1 AND (ultimo_acceso IS NULL OR ultimo_acceso < NOW() - INTERVAL '1 minute')`,
+     WHERE id = $1 AND (ultimo_acceso IS NULL OR ultimo_acceso < NOW() - INTERVAL '30 seconds')`,
     [id]
   );
 }
