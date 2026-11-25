@@ -42,11 +42,14 @@ async function enviarCorreo({ para, asunto, texto, html }) {
   }
   try {
     await obtenerTransporte().sendMail({
-      from: `"Tanextli" <${config.correo.remitente}>`,
+      from: { name: 'Tanextli', address: config.correo.remitente },
+      replyTo: config.correo.remitente,
       to: para,
       subject: asunto,
       text: texto,
       html,
+      // Avisan que es un correo automático (las respuestas automáticas no regresan)
+      headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All' },
     });
   } catch (err) {
     console.error(`[correo] No se pudo enviar a ${para}: ${err.message}`);
@@ -71,7 +74,7 @@ function plantillaCodigo({ nombre, titulo, mensaje, codigo, minutos, nota }) {
     '',
     nota,
     '',
-    `Tanextli · ${config.appUrl}`,
+    'Tanextli · Aprende náhuatl',
   ].join('\n');
 
   const html = `<!doctype html>
@@ -94,7 +97,7 @@ function plantillaCodigo({ nombre, titulo, mensaje, codigo, minutos, nota }) {
           <p style="margin:18px 0 0;font-size:13px;color:#4f6b62;line-height:1.5">${escapar(nota)}</p>
         </td></tr>
         <tr><td style="padding:16px 28px;background:#f6faf7;font-size:12px;color:#6b8279;text-align:center">
-          <a href="${escapar(config.appUrl)}" style="color:#2f7d55;font-weight:700;text-decoration:none">${escapar(config.appUrl.replace(/^https?:\/\//, ''))}</a>
+          Tanextli · Aprende náhuatl<br>Este correo se envió automáticamente; no es necesario responder.
         </td></tr>
       </table>
     </td></tr>
