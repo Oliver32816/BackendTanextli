@@ -25,7 +25,14 @@ async function perfil(req, res) {
 async function latido(req, res) {
   const token = service.tokenDeLaPeticion(req);
   if (!token) throw unauthorized('Falta el token de sesión.');
-  await service.usuarioDelToken(token); // valida la sesión y actualiza ultimo_acceso
+  await service.latido(token); // valida la sesión y marca "en línea"
+  res.status(204).end();
+}
+
+// POST /auth/salida con token: cerró sesión, cerró la pestaña o dejó la app en segundo plano
+async function salida(req, res) {
+  const token = service.tokenDeLaPeticion(req);
+  if (token) await service.salida(token);
   res.status(204).end();
 }
 
@@ -88,6 +95,6 @@ async function restablecerPassword(req, res) {
 }
 
 module.exports = {
-  registro, login, perfil, latido, google, cambiarPassword,
+  registro, login, perfil, latido, salida, google, cambiarPassword,
   enviarVerificacion, confirmarVerificacion, olvidePassword, restablecerPassword,
 };

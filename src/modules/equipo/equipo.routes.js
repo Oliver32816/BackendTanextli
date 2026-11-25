@@ -28,7 +28,7 @@ router.get('/equipo/usuarios', limite, asyncHandler(async (req, res) => {
   if (!ROLES_EQUIPO.includes(usuario.rol)) throw forbidden('Esta sección es solo para administradores.');
 
   const { rows } = await db.query(
-    `SELECT id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en, ultimo_acceso, foto_url
+    `SELECT id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en, ultimo_acceso, ultima_senal, foto_url
      FROM usuarios
      ORDER BY ultimo_acceso DESC NULLS LAST, id ASC`
   );

@@ -19,6 +19,7 @@ services:
       - ./db/migrations/003_progreso_usuarios.sql:/docker-entrypoint-initdb.d/003_progreso_usuarios.sql:ro
       - ./db/migrations/004_cuentas.sql:/docker-entrypoint-initdb.d/004_cuentas.sql:ro
       - ./db/migrations/005_verificacion_correo.sql:/docker-entrypoint-initdb.d/005_verificacion_correo.sql:ro
+      - ./db/migrations/006_presencia.sql:/docker-entrypoint-initdb.d/006_presencia.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DB_NAME}"]
       interval: 10s

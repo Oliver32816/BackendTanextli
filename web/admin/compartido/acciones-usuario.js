@@ -200,14 +200,16 @@ export function accionesDeUsuario(u, recargar) {
   ]);
 }
 
-// "Hace 5 min" / "Nunca"; "Ahora" (activo) si la app mandó señal en los últimos 3 minutos
-// (la app abierta avisa cada minuto con POST /auth/latido)
-const EN_LINEA_MIN = 3;
-export function ultimoAcceso(fechaIso) {
+// "Ahora" (activo) solo si la app está abierta: mandó su latido (cada 30 s) hace menos de 75 s.
+// Al cerrar sesión, cerrar la pestaña o dejarla en segundo plano la señal se borra al instante.
+// Si no, "Hace un momento" / "Hace 5 min" / "Nunca" según la última actividad.
+const EN_LINEA_SEG = 75;
+export function ultimoAcceso(fechaIso, senalIso) {
+  const activo = Boolean(senalIso) && (Date.now() - new Date(senalIso).getTime()) / 1000 < EN_LINEA_SEG;
+  if (activo) return { texto: 'Ahora', activo };
   if (!fechaIso) return { texto: 'Nunca', activo: false };
   const minutos = Math.max(0, Math.round((Date.now() - new Date(fechaIso).getTime()) / 60000));
-  const activo = minutos < EN_LINEA_MIN;
-  const texto = activo ? 'Ahora' : minutos < 60 ? `Hace ${minutos} min`
+  const texto = minutos < 1 ? 'Hace un momento' : minutos < 60 ? `Hace ${minutos} min`
     : minutos < 1440 ? `Hace ${Math.round(minutos / 60)} h` : `Hace ${Math.round(minutos / 1440)} d`;
   return { texto, activo };
 }

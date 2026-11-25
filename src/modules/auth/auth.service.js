@@ -52,6 +52,21 @@ function seguirConectado(id) {
   repo.tocarAcceso(id).catch((err) => console.warn(`[auth] No se pudo actualizar el acceso de ${id}: ${err.message}`));
 }
 
+// Presencia ("Ahora" en Administración): latido de la app abierta y aviso de salida
+async function latido(token) {
+  const usuario = await usuarioDelToken(token);
+  await repo.marcarEnLinea(usuario.id);
+}
+async function salida(token) {
+  let datos;
+  try {
+    datos = jwt.verify(token, config.jwtSecret);
+  } catch {
+    return; // token vencido: no hay nada que marcar
+  }
+  await repo.marcarDesconectado(datos.id);
+}
+
 // Punto único de manejo de contraseñas: se guardan con bcrypt (requiere la migración 003,
 // que amplía password_hash). Las cuentas antiguas en texto plano siguen entrando y su
 // contraseña se convierte a bcrypt automáticamente en su siguiente inicio de sesión.
@@ -280,6 +295,6 @@ async function restablecerConCodigo({ correo, codigo, nueva }) {
 
 module.exports = {
   registrar, iniciarSesion, iniciarConGoogle, cambiarPassword, prepararPassword, passwordTemporal,
-  crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion, seguirConectado,
+  crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion, seguirConectado, latido, salida,
   enviarVerificacion, confirmarVerificacion, solicitarRestablecimiento, restablecerConCodigo,
 };

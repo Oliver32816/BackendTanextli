@@ -7,6 +7,7 @@
 --   003_progreso_usuarios.sql   progreso (ya incluido aquí; en una base nueva no cambia nada)
 --   004_cuentas.sql             Google y contraseña temporal (ya incluido aquí)
 --   005_verificacion_correo.sql verificación de correo y códigos por correo (ya incluido aquí)
+--   006_presencia.sql          "En línea ahora" con latido (ya incluido aquí)
 --
 -- Relaciones:
 --   usuarios 1─N progreso_usuarios N─1 palabras N─1 categorias (subcategoría = lección)
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     foto_url       VARCHAR(500),
     debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE, -- tras un restablecimiento
     ultimo_acceso  TIMESTAMP,
+    ultima_senal   TIMESTAMPTZ,
     correo_verificado    BOOLEAN DEFAULT FALSE,      -- NULL = cuenta anterior a la verificación
     correo_verificado_en TIMESTAMP,
     CONSTRAINT chk_usuarios_proveedor CHECK (proveedor IN ('local', 'google'))

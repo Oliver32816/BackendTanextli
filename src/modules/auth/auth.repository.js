@@ -69,6 +69,20 @@ async function registrarAcceso(id) {
 }
 
 // "Sigue conectado": actualiza el último acceso como máximo una vez por minuto
+// Presencia: la app abierta y visible avisa cada 30 s (máximo una escritura cada 10 s)
+async function marcarEnLinea(id) {
+  await db.query(
+    `UPDATE usuarios SET ultima_senal = NOW(), ultimo_acceso = NOW()
+     WHERE id = $1 AND (ultima_senal IS NULL OR ultima_senal < NOW() - INTERVAL '10 seconds')`,
+    [id]
+  );
+}
+
+// Cerró sesión, cerró la pestaña o dejó la app en segundo plano
+async function marcarDesconectado(id) {
+  await db.query('UPDATE usuarios SET ultima_senal = NULL WHERE id = $1 AND ultima_senal IS NOT NULL', [id]);
+}
+
 async function tocarAcceso(id) {
   await db.query(
     `UPDATE usuarios SET ultimo_acceso = NOW()
@@ -152,6 +166,6 @@ async function usarCodigo(id) {
 
 module.exports = {
   buscarPorCorreo, buscarPorGoogleId, buscarPorId, passwordDe, existeCorreo, crear, vincularGoogle,
-  actualizarPassword, registrarAcceso, tocarAcceso, marcarCorreoVerificado,
+  actualizarPassword, registrarAcceso, tocarAcceso, marcarEnLinea, marcarDesconectado, marcarCorreoVerificado,
   guardarCodigo, codigoVigente, segundosDesdeUltimoCodigo, contarCodigosRecientes, sumarIntentoCodigo, usarCodigo,
 };

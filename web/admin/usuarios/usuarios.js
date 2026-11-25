@@ -24,7 +24,7 @@ function pintarKpis() {
 }
 
 function fila(u, i) {
-  const acceso = ultimoAcceso(u.ultimo_acceso);
+  const acceso = ultimoAcceso(u.ultimo_acceso, u.ultima_senal);
   const tr = el('tr', {}, [
     el('td', {}, [el('div', { class: 'persona' }, [
       el('span', { class: 'avatar', 'aria-hidden': 'true', text: iniciales(u.nombre_usuario) }),
@@ -80,7 +80,7 @@ async function iniciar() {
   }
 }
 
-// Cada minuto vuelve a pedir la lista (sin animaciones) para que "Ahora" / "Hace X min" esté al día.
+// Cada 30 s vuelve a pedir la lista (sin animaciones) para que "Ahora" / "Hace X min" esté al día.
 // Se salta si la pestaña está oculta o hay una ventana de acción abierta.
 async function refrescar() {
   if (document.hidden || document.querySelector('.modal[aria-hidden="false"]')) return;
@@ -95,5 +95,5 @@ async function refrescar() {
 
 buscador.addEventListener('input', retrasar(pintar, 150));
 iniciar();
-setInterval(refrescar, 60000);
+setInterval(refrescar, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refrescar(); });

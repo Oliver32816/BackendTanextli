@@ -3,7 +3,7 @@ const db = require('../../config/db');
 
 const COLUMNAS = `id, nombre_usuario, correo, COALESCE(rol, 'usuario') AS rol, creado_en,
                   proveedor, (google_id IS NOT NULL) AS con_google, debe_cambiar_password, ultimo_acceso,
-                  correo_verificado`;
+                  ultima_senal, correo_verificado`;
 
 async function listar({ incluirSuperusuarios = true } = {}) {
   const filtro = incluirSuperusuarios ? '' : "WHERE COALESCE(rol, 'usuario') <> 'superuser'";
