@@ -160,7 +160,7 @@ async function iniciarConGoogle(credential) {
 async function cambiarPassword({ usuarioId, actual, nueva }) {
   const guardado = await repo.passwordDe(usuarioId);
   if (!guardado || !(await passwordCoincide(actual, guardado))) {
-    throw unauthorized('La contraseña actual no es correcta.');
+    throw badRequest('La contraseña actual no es correcta.');
   }
   await repo.actualizarPassword(usuarioId, await prepararPassword(nueva), { debeCambiar: false });
 }
