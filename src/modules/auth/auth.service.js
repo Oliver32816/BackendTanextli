@@ -41,7 +41,13 @@ async function usuarioDelToken(token) {
   }
   const usuario = await repo.buscarPorId(datos.id);
   if (!usuario) throw unauthorized(SESION_INVALIDA);
+  seguirConectado(usuario.id);
   return usuario;
+}
+
+// Cada petición con sesión cuenta como actividad (para "En línea ahora"). No espera ni falla.
+function seguirConectado(id) {
+  repo.tocarAcceso(id).catch((err) => console.warn(`[auth] No se pudo actualizar el acceso de ${id}: ${err.message}`));
 }
 
 // Punto único de manejo de contraseñas: se guardan con bcrypt (requiere la migración 003,
@@ -145,5 +151,5 @@ async function cambiarPassword({ usuarioId, actual, nueva }) {
 
 module.exports = {
   registrar, iniciarSesion, iniciarConGoogle, cambiarPassword, prepararPassword, passwordTemporal,
-  crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion,
+  crearToken, usuarioDelToken, datosDelToken, tokenDeLaPeticion, seguirConectado,
 };

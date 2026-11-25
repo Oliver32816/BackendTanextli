@@ -64,7 +64,16 @@ async function registrarAcceso(id) {
   await db.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [id]);
 }
 
+// "Sigue conectado": actualiza el último acceso como máximo una vez por minuto
+async function tocarAcceso(id) {
+  await db.query(
+    `UPDATE usuarios SET ultimo_acceso = NOW()
+     WHERE id = $1 AND (ultimo_acceso IS NULL OR ultimo_acceso < NOW() - INTERVAL '1 minute')`,
+    [id]
+  );
+}
+
 module.exports = {
   buscarPorCorreo, buscarPorGoogleId, buscarPorId, passwordDe, existeCorreo, crear, vincularGoogle,
-  actualizarPassword, registrarAcceso,
+  actualizarPassword, registrarAcceso, tocarAcceso,
 };

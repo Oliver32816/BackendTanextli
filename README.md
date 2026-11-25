@@ -123,3 +123,13 @@ pm2 reload ecosystem.config.js && pm2 save
 |---|---|---|
 | 127.0.0.1:3001 | Funnel :443 (público) | `/api`, `/api/v1`, `/portal`, `/media`, `/multimedia`, `/galeria-imagenes`, `/health` |
 | 127.0.0.1:3010 | serve :9443 (solo tailnet) | `/admin/*`, `/api/admin/*` |
+
+## Vista de equipo (solo lectura)
+
+`GET /api/equipo/usuarios` (con token): solo para rol `admin` o `superuser` (el rol se revisa en la
+base de datos). Devuelve nombre, correo, rol, registro y último acceso, sin contraseñas, para la
+página **Administración** de la app web. No hay rutas para modificar nada desde ahí.
+
+El último acceso se actualiza al iniciar sesión y, como máximo una vez por minuto, en cada petición
+con sesión (`/perfil` y progreso), para saber quién está **en línea**.
+

@@ -5,6 +5,7 @@ const catalogoRoutes = require('../modules/catalogo/catalogo.routes');
 const progresoRoutes = require('../modules/progreso/progreso.routes');
 const media = require('../modules/media/media.routes');
 const imagenes = require('../modules/imagenes/imagenes.routes');
+const equipoRoutes = require('../modules/equipo/equipo.routes');
 const usuarios = require('../modules/usuarios/usuarios.controller');
 const asyncHandler = require('../utils/asyncHandler');
 const { soloEquipo } = require('../middlewares/security');
@@ -16,6 +17,7 @@ router.use(catalogoRoutes);     // GET /categorias, GET /palabras
 router.use(progresoRoutes);     // GET /progreso, GET /progreso/:usuario_id, POST /progreso
 router.use(media.apiRouter);    // GET /media-list
 router.use(imagenes.apiRouter); // GET /imagenes
+router.use(equipoRoutes);       // GET /equipo/usuarios (admin y superuser, solo lectura)
 
 // Lista de usuarios: mismo formato de siempre, pero solo para dispositivos de la tailnet
 router.get('/usuarios', soloEquipo, asyncHandler(usuarios.listarCompat));

@@ -27,6 +27,7 @@ function resolverUsuario(req, solicitado, { exigirToken = false } = {}) {
     return solicitado;
   }
   const { id, rol } = auth.datosDelToken(token);
+  auth.seguirConectado(id);
   if (solicitado === 'yo' || solicitado === undefined) return id;
   if (solicitado !== id && !['admin', 'superuser'].includes(rol)) {
     throw forbidden('No puedes consultar ni modificar el progreso de otro usuario.');
