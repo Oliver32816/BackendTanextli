@@ -199,6 +199,14 @@ main { flex: 1; padding-bottom: 4rem; }
   animation: flotar-suave 7s ease-in-out infinite;
 }
 .ilustracion .burbuja small { color: var(--texto-tenue); font-weight: 600; }
+/* Palabra que cambia dentro de la burbuja (misma animación que el login de la app) */
+.ilustracion .burbuja-palabra { display: inline-flex; gap: .5rem; align-items: center; animation: palabra-entra .55s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes palabra-entra {
+  0%   { opacity: 0; transform: translateY(8px) rotateX(70deg) scale(.85); filter: blur(3px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .ilustracion .burbuja-palabra { animation: none; } }
 .ilustracion .b1 { top: 6%; right: -2%; }
 .ilustracion .b2 { bottom: 12%; left: -6%; animation-delay: -2.5s; }
 .ilustracion .b3 { bottom: -2%; right: 8%; animation-delay: -4s; }

@@ -82,5 +82,57 @@ function pintarEndpoints() {
 }
 
 pintarEndpoints();
+// ---------- Palabras que cambian en las burbujas (igual que el login de la app) ----------
+// Las tres burbujas junto a Lobita muestran el vocabulario real (GET /api/v1/palabras),
+// cambiando una por una cada 1.6 s, sin repetir las que se están viendo.
+const CAMBIO_PALABRA_MS = 1600;
+
+function armarVocabulario(palabras) {
+  const vistas = new Set();
+  const lista = [];
+  palabras.forEach((p) => {
+    if (!p.nahuatl || !p.espanol) return;
+    const clave = p.nahuatl.trim().toLowerCase();
+    if (vistas.has(clave)) return;
+    vistas.add(clave);
+    lista.push({ nahuatl: p.nahuatl.trim(), espanol: /^\d+$/.test(p.espanol) ? `Número ${p.espanol}` : p.espanol.trim() });
+  });
+  for (let i = lista.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [lista[i], lista[j]] = [lista[j], lista[i]];
+  }
+  return lista;
+}
+
+function mostrarPalabra(burbuja, palabra) {
+  const nueva = el('span', { class: 'burbuja-palabra' }, [palabra.nahuatl, ' ', el('small', {}, [palabra.espanol])]);
+  burbuja.replaceChildren(nueva);
+  burbuja.setAttribute('title', `${palabra.nahuatl} = ${palabra.espanol}`);
+}
+
+async function animarPalabras() {
+  const burbujas = [...document.querySelectorAll('.ilustracion .burbuja')];
+  if (!burbujas.length) return;
+  let vocabulario = [];
+  try {
+    vocabulario = armarVocabulario((await obtenerJSON('/api/v1/palabras')).palabras || []);
+  } catch {
+    return; // sin conexión: se quedan las palabras de ejemplo
+  }
+  if (vocabulario.length <= burbujas.length) return;
+  burbujas.forEach((b, i) => mostrarPalabra(b, vocabulario[i]));
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+  let turno = 0;
+  let siguiente = burbujas.length;
+  setInterval(() => {
+    if (document.hidden) return;
+    mostrarPalabra(burbujas[turno % burbujas.length], vocabulario[siguiente % vocabulario.length]);
+    siguiente += 1;
+    turno += 1;
+  }, CAMBIO_PALABRA_MS);
+}
+
 cargarEstadisticas();
+animarPalabras();
 activarRevelado();
