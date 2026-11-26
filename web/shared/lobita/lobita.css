@@ -753,3 +753,8 @@
 @media (prefers-reduced-motion: reduce) {
   .mxa-globo.zzz { animation: none; }
 }
+
+/* Lobita aparece hasta que todas sus capas cargaron (así nunca se ve "a pedazos") */
+.mxa { transition: opacity .35s ease; }
+.mxa.mxa-cargando { opacity: 0; }
+.mxa.mxa-cargando * { animation-play-state: paused !important; }

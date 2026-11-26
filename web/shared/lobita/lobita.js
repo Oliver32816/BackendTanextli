@@ -11,9 +11,29 @@
 // dormida si nadie mueve nada un rato. Desde JS:  lobita.decir('¡Piali!', 'feliz', 2500)
 
 const IMG = '/portal/assets/lobita/img';
-const capa = (nombre) => `${IMG}/capas/${nombre}.png`;
-const boca = (nombre) => `${IMG}/expresiones/bocas/${nombre}.png`;
-const ojo = (nombre) => `${IMG}/expresiones/ojos/${nombre}.png`;
+// WebP: unas 4.5 veces más ligero que PNG y se ve igual
+const capa = (nombre) => `${IMG}/capas/${nombre}.webp`;
+const boca = (nombre) => `${IMG}/expresiones/bocas/${nombre}.webp`;
+const ojo = (nombre) => `${IMG}/expresiones/ojos/${nombre}.webp`;
+
+// ---- Precarga ----
+// Lobita se arma con ~30 capas. Si se muestra antes de que TODAS lleguen, se ve "a pedazos"
+// (por ejemplo, con los ojos en blanco porque el fondo del ojo llegó antes que el iris).
+// Se descargan y decodifican todas en cuanto carga este archivo, y Lobita aparece completa.
+const TODAS_LAS_CAPAS = [
+  ...['cola', 'mano', 'antebrazo', 'cuerpo', 'oreja-i', 'oreja-d', 'cabeza', 'ceja-i', 'ceja-d', 'sonrisa',
+    'ojo-fondo-i', 'ojo-fondo-d', 'iris-i', 'iris-d', 'pestanas-i', 'pestanas-d', 'ojo-mascara-i', 'ojo-mascara-d'].map(capa),
+  ...['boca-abierta', 'boca-grande', 'boca-triste', 'boca-sorpresa', 'boca-hmm'].map(boca),
+  ...['ojo-cerrado-i', 'ojo-cerrado-d', 'ojo-feliz-i', 'ojo-feliz-d'].map(ojo),
+];
+const imagenesListas = []; // se guardan para que el navegador no las descarte
+const capasListas = Promise.all(TODAS_LAS_CAPAS.map((src) => {
+  const imagen = new Image();
+  imagen.decoding = 'async';
+  imagen.src = src;
+  imagenesListas.push(imagen);
+  return (imagen.decode ? imagen.decode() : Promise.resolve()).catch(() => {});
+}));
 
 // boca: sonrisa | hablando | grande | triste | sorpresa | hmm · ojos: abiertos | felices | cerrados
 // mirada: [x, y] de las pupilas · vivo: mira a los lados por su cuenta
@@ -198,6 +218,9 @@ export function crearLobita(contenedor, opciones = {}) {
   const movil = opciones.tamanoMovil && window.matchMedia('(max-width: 720px)').matches;
   const tamano = Number(movil ? opciones.tamanoMovil : opciones.tamano) || 240;
   const { mxa, orejaI, orejaD } = construir(opciones.entrada);
+  // Invisible (y con la entrada en pausa) hasta que todas las capas estén listas
+  mxa.classList.add('mxa-cargando');
+  capasListas.then(() => mxa.classList.remove('mxa-cargando'));
   const globo = div('mxa-globo');
   const flota = div('mxa-flota oculto', [globo]);
   flota.setAttribute('aria-live', 'polite');

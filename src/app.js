@@ -3,6 +3,7 @@
 const express = require('express');
 const { securityHeaders, corsPublico } = require('./middlewares/security');
 const { notFound, errorHandler } = require('./middlewares/errors');
+const compresion = require('./middlewares/compresion');
 const healthRoutes = require('./modules/health/health.routes');
 const webRoutes = require('./routes/web.routes');
 const apiRoutes = require('./routes/api.routes');
@@ -13,6 +14,7 @@ function createApp() {
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback'); // Funnel entrega las peticiones desde el proxy local de Tailscale
   app.use(securityHeaders);
+  app.use(compresion);
   app.use(corsPublico);
   app.use(express.json({ limit: '100kb' }));
 

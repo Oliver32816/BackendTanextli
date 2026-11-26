@@ -25,6 +25,8 @@ router.use(media.archivosRouter);                     // /audios/*, /multimedia/
 router.use('/galeria-imagenes', imagenes.galeriaRouter); // /galeria-imagenes/imagenes/*, /galeria-imagenes/api/imagenes
 
 // Portal: plantilla compartida y páginas
+// Las capas de Lobita casi nunca cambian: el navegador las guarda una semana (y luego solo revisa si cambiaron)
+router.use('/portal/assets/lobita/img', estatico(path.join('shared', 'lobita', 'img'), '7d'));
 router.use('/portal/assets', estatico('shared', '1h'));
 router.use('/portal', estatico('public'));
 

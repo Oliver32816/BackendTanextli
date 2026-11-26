@@ -6,6 +6,7 @@ const path = require('path');
 const express = require('express');
 const { adminSecurityHeaders, soloTailnetAutorizada } = require('./middlewares/security');
 const { notFound, errorHandler } = require('./middlewares/errors');
+const compresion = require('./middlewares/compresion');
 const healthRoutes = require('./modules/health/health.routes');
 const adminRoutes = require('./routes/admin.routes');
 
@@ -15,9 +16,10 @@ function createAdminApp() {
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
   app.use(adminSecurityHeaders);
+  app.use(compresion);
   app.use(healthRoutes);         // /health no muestra datos; útil para revisar el proceso desde el servidor
   // Estilos e imágenes públicos: los necesita también la página "No tienes acceso"
-  app.use('/portal/assets', express.static(path.join(__dirname, '..', 'web', 'shared'), { dotfiles: 'ignore' }));
+  app.use('/portal/assets', express.static(path.join(__dirname, '..', 'web', 'shared'), { dotfiles: 'ignore', maxAge: '1h' }));
   app.use(soloTailnetAutorizada);
   app.use(express.json({ limit: '100kb' }));
 
