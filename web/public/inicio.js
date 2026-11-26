@@ -105,7 +105,7 @@ function armarVocabulario(palabras) {
 }
 
 function mostrarPalabra(burbuja, palabra) {
-  const nueva = el('span', { class: 'burbuja-palabra' }, [palabra.nahuatl, ' ', el('small', {}, [palabra.espanol])]);
+  const nueva = el('span', { class: 'burbuja-palabra' }, [el('strong', {}, [palabra.nahuatl]), el('small', {}, [palabra.espanol])]);
   burbuja.replaceChildren(nueva);
   burbuja.setAttribute('title', `${palabra.nahuatl} = ${palabra.espanol}`);
 }

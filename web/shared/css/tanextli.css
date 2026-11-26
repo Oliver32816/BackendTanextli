@@ -194,22 +194,24 @@ main { flex: 1; padding-bottom: 4rem; }
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .25));
 }
 .ilustracion .burbuja {
-  position: absolute; padding: .55rem .9rem; border-radius: 14px; background: var(--fondo-2);
-  box-shadow: var(--sombra); font-weight: 700; font-size: .9rem; display: flex; gap: .5rem; align-items: center;
+  position: absolute; z-index: 2; display: grid; padding: .5rem .85rem; border-radius: 14px; background: var(--fondo-2);
+  color: var(--texto); box-shadow: var(--sombra); line-height: 1.2;
   animation: flotar-suave 7s ease-in-out infinite;
 }
-.ilustracion .burbuja small { color: var(--texto-tenue); font-weight: 600; }
+/* Igual que las burbujas del login de la app: náhuatl arriba (negrita) y español abajo */
+.ilustracion .burbuja strong { font-size: .92rem; font-weight: 800; }
+.ilustracion .burbuja small { font-size: .72rem; font-weight: 600; color: var(--texto-tenue); }
 /* Palabra que cambia dentro de la burbuja (misma animación que el login de la app) */
-.ilustracion .burbuja-palabra { display: inline-flex; gap: .5rem; align-items: center; animation: palabra-entra .55s cubic-bezier(.3, 1.4, .5, 1) both; }
+.ilustracion .burbuja-palabra { display: grid; animation: palabra-entra .55s cubic-bezier(.3, 1.4, .5, 1) both; }
 @keyframes palabra-entra {
   0%   { opacity: 0; transform: translateY(8px) rotateX(70deg) scale(.85); filter: blur(3px); }
   60%  { opacity: 1; filter: blur(0); }
   100% { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .ilustracion .burbuja-palabra { animation: none; } }
-.ilustracion .b1 { top: 6%; right: -2%; }
-.ilustracion .b2 { bottom: 12%; left: -6%; animation-delay: -2.5s; }
-.ilustracion .b3 { bottom: -2%; right: 8%; animation-delay: -4s; }
+.ilustracion .b1 { top: 10%; right: -2%; }
+.ilustracion .b2 { top: 44%; left: -4%; animation-delay: -2.5s; }
+.ilustracion .b3 { bottom: 8%; right: 0; animation-delay: -4.5s; }
 
 /* ---------- Componentes ---------- */
 .boton {

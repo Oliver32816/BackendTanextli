@@ -27,8 +27,8 @@ router.use('/galeria-imagenes', imagenes.galeriaRouter); // /galeria-imagenes/im
 // Portal: plantilla compartida y páginas
 // Las capas de Lobita casi nunca cambian: el navegador las guarda una semana (y luego solo revisa si cambiaron)
 router.use('/portal/assets/lobita/img', estatico(path.join('shared', 'lobita', 'img'), '7d'));
-router.use('/portal/assets', estatico('shared', '1h'));
-router.use('/portal', estatico('public'));
+router.use('/portal/assets', estatico('shared', 0)); // JS/CSS: se revisan siempre (304 si no cambiaron)
+router.use('/portal', estatico('public', 0));
 
 // Botón "Usuarios" del portal: los dispositivos de la tailnet pasan al panel (puerto 9443);
 // desde internet se ve "No tienes acceso a esta función".
